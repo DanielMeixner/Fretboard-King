@@ -9,12 +9,16 @@ const SETTINGS_KEY = 'fbk_settings';
 type Settings = {
   showStringNames: boolean;
   fretboardColor: string;
+  baseTimer: number; // Base timer in seconds (will be adjusted based on performance)
+  adaptiveTiming: boolean; // Whether to adjust timing based on score
 };
 
 function getDefaultSettings(): Settings {
   return {
     showStringNames: true,
     fretboardColor: '#222',
+    baseTimer: 5,
+    adaptiveTiming: true,
   };
 }
 
@@ -94,6 +98,13 @@ function App() {
   function handleColorChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSettings((s) => ({ ...s, fretboardColor: e.target.value }));
   }
+  function handleTimerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSettings((s) => ({ ...s, baseTimer: parseInt(e.target.value, 10) || 5 }));
+  }
+  function handleAdaptiveTimingToggle() {
+    setSettings((s) => ({ ...s, adaptiveTiming: !s.adaptiveTiming }));
+  }
+
   // Local storage keys
   const SCORE_KEY = 'fbk_score';
   const YESTERDAY_KEY = 'fbk_yesterday';
@@ -135,6 +146,55 @@ function App() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(5);
 
+  // Round state
+  const [roundActive, setRoundActive] = useState(false);
+  const [questionsInRound, setQuestionsInRound] = useState(0);
+  const [roundScore, setRoundScore] = useState(0);
+  const QUESTIONS_PER_ROUND = 15;
+
+  // Calculate dynamic timer based on score and settings
+  const getCalculatedTimer = React.useCallback((): number => {
+    if (!settings.adaptiveTiming) {
+      return settings.baseTimer;
+    }
+    
+    // Adjust timer based on recent performance
+    // If score is low (beginner), give more time
+    // Base calculation: more time for lower scores
+    const recentPerformance = roundActive ? (roundScore / Math.max(questionsInRound, 1)) : (score / Math.max(score + 10, 1));
+    
+    // Scale from 2x base time (for beginners) to 0.7x base time (for experts)
+    const multiplier = Math.max(0.7, Math.min(2.0, 2.0 - recentPerformance * 1.3));
+    
+    return Math.round(settings.baseTimer * multiplier);
+  }, [settings.adaptiveTiming, settings.baseTimer, roundActive, roundScore, questionsInRound, score]);
+
+  // Round management functions
+  const startRound = React.useCallback(() => {
+    setRoundActive(true);
+    setQuestionsInRound(0);
+    setRoundScore(0);
+    setQuiz(getRandomQuiz());
+    // Timer will be set by the next useEffect once roundActive is true
+    setSelected(null);
+    setFeedback(null);
+  }, []);
+
+  const endRound = React.useCallback(() => {
+    setRoundActive(false);
+    setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND}`);
+    // Add round score to total score
+    setScore((s) => s + roundScore);
+  }, [roundScore, QUESTIONS_PER_ROUND]);
+
+  const stopRound = React.useCallback(() => {
+    setRoundActive(false);
+    setQuestionsInRound(0);
+    setRoundScore(0);
+    setFeedback('Round stopped');
+    setTimeout(() => setFeedback(null), 2000);
+  }, []);
+
   // On mount, check if date changed and reset scores if needed
   React.useEffect(() => {
     const storedDate = localStorage.getItem(DATE_KEY);
@@ -172,37 +232,63 @@ function App() {
 
   // Timer effect
   React.useEffect(() => {
-    if (selected !== null) return;
+    if (!roundActive || selected !== null) return;
     if (timer === 0) {
       setFeedback('⏰ Time up!');
       setTimeout(() => {
         setFeedback(null);
         setSelected(null);
-        setQuiz(getRandomQuiz());
-        setTimer(5);
+        
+        // Move to next question in round
+        const nextQuestionNum = questionsInRound + 1;
+        if (nextQuestionNum >= QUESTIONS_PER_ROUND) {
+          endRound();
+        } else {
+          setQuestionsInRound(nextQuestionNum);
+          setQuiz(getRandomQuiz());
+          setTimer(getCalculatedTimer());
+        }
       }, 1200);
       return;
     }
     const t = setTimeout(() => setTimer(timer - 1), 1000);
     return () => clearTimeout(t);
-  }, [timer, selected]);
+  }, [timer, selected, roundActive, questionsInRound, endRound, getCalculatedTimer]);
 
-  function handleSelect(option: string) {
-    if (selected !== null) return;
+  // Set initial timer when round starts
+  React.useEffect(() => {
+    if (roundActive && questionsInRound === 0) {
+      setTimer(getCalculatedTimer());
+    }
+  }, [roundActive, questionsInRound, getCalculatedTimer]);
+
+  const handleSelect = React.useCallback((option: string) => {
+    if (selected !== null || !roundActive) return;
     setSelected(option);
-    if (option === quiz.correctNote) {
-      setScore((s) => s + 1);
+    const isCorrect = option === quiz.correctNote;
+    
+    if (isCorrect) {
+      setRoundScore((s) => s + 1);
       setFeedback('✅ Correct!');
     } else {
       setFeedback(`❌ Wrong! The correct answer was: ${quiz.correctNote}`);
     }
+    
     setTimeout(() => {
       setFeedback(null);
       setSelected(null);
-      setQuiz(getRandomQuiz());
-      setTimer(5);
+      
+      // Move to next question in round
+      const nextQuestionNum = questionsInRound + 1;
+      if (nextQuestionNum >= QUESTIONS_PER_ROUND) {
+        endRound();
+      } else {
+        setQuestionsInRound(nextQuestionNum);
+        setQuiz(getRandomQuiz());
+        setTimer(getCalculatedTimer());
+      }
     }, 1200);
-  }
+  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer]);
 
   // Get last 30 days for chart
   function getLast30Days() {
@@ -297,7 +383,10 @@ function App() {
         fontSize: 20,
         color: 'var(--on-surface)',
       }}>
-        <span>Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
+        <span>Total Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
+        {roundActive && (
+          <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
+        )}
         <span style={{ color: '#888', fontSize: 16 }}>Yesterday: {yesterdayScore}</span>
       </div>
       <BarChart history={history} getLast30Days={getLast30Days} />
@@ -306,49 +395,112 @@ function App() {
         showStringNames={settings.showStringNames}
         fretboardColor={settings.fretboardColor}
       />
+      
+      {/* Round Controls */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 16,
+        margin: `${theme.spacing(2)} 0`,
+      }}>
+        {!roundActive ? (
+          <button
+            onClick={startRound}
+            style={{
+              padding: '12px 24px',
+              fontSize: 18,
+              background: 'var(--primary)',
+              color: 'var(--on-primary)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+              boxShadow: 'var(--shadow)',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = 'var(--secondary)')}
+            onMouseOut={e => (e.currentTarget.style.background = 'var(--primary)')}
+          >
+            🎯 Start Round (15 questions)
+          </button>
+        ) : (
+          <button
+            onClick={stopRound}
+            style={{
+              padding: '12px 24px',
+              fontSize: 18,
+              background: 'var(--error)',
+              color: 'var(--on-primary)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+              boxShadow: 'var(--shadow)',
+              transition: 'background 0.2s',
+            }}
+          >
+            🛑 Stop Round
+          </button>
+        )}
+      </div>
+
       <main style={{ margin: `${theme.spacing(3)} 0` }}>
-        <div style={{
-          fontSize: 22,
-          marginBottom: 12,
-          textAlign: 'center',
-          fontWeight: 500,
-          color: 'var(--on-primary)',
-        }}>
-          Which note is this? <b style={{ color: 'var(--primary)' }}>({timer})</b>
-        </div>
-        <div style={{
-          display: 'flex',
-          gap: 24,
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-        }}>
-          {quiz.options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => handleSelect(opt)}
-              disabled={selected !== null}
-              style={{
-                padding: '16px 36px',
-                fontSize: 22,
-                background: selected === opt
-                  ? (opt === quiz.correctNote ? 'var(--secondary)' : 'var(--error)')
-                  : 'var(--surface)',
-                color: 'var(--on-primary)',
-                border: 'none',
-                borderRadius: 'var(--radius)',
-                cursor: selected === null ? 'pointer' : 'default',
-                opacity: selected !== null && selected !== opt ? 0.7 : 1,
-                boxShadow: selected === opt ? '0 2px 12px #0004' : 'none',
-                fontWeight: 500,
-                marginBottom: 8,
-                transition: 'background 0.2s, box-shadow 0.2s',
-              }}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-        {feedback && (
+        {roundActive ? (
+          <>
+            <div style={{
+              fontSize: 22,
+              marginBottom: 12,
+              textAlign: 'center',
+              fontWeight: 500,
+              color: 'var(--on-primary)',
+            }}>
+              Which note is this? <b style={{ color: 'var(--primary)' }}>({timer})</b>
+            </div>
+            <div style={{
+              display: 'flex',
+              gap: 24,
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+            }}>
+              {quiz.options.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => handleSelect(opt)}
+                  disabled={selected !== null}
+                  style={{
+                    padding: '16px 36px',
+                    fontSize: 22,
+                    background: selected === opt
+                      ? (opt === quiz.correctNote ? 'var(--secondary)' : 'var(--error)')
+                      : 'var(--surface)',
+                    color: 'var(--on-primary)',
+                    border: 'none',
+                    borderRadius: 'var(--radius)',
+                    cursor: selected === null ? 'pointer' : 'default',
+                    opacity: selected !== null && selected !== opt ? 0.7 : 1,
+                    boxShadow: selected === opt ? '0 2px 12px #0004' : 'none',
+                    fontWeight: 500,
+                    marginBottom: 8,
+                    transition: 'background 0.2s, box-shadow 0.2s',
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div style={{
+            fontSize: 22,
+            textAlign: 'center',
+            fontWeight: 500,
+            color: 'var(--on-surface)',
+            padding: theme.spacing(4),
+          }}>
+            {feedback?.includes('Round completed') ? feedback : 'Click "Start Round" to begin a new 15-question challenge!'}
+          </div>
+        )}
+        {feedback && roundActive && (
           <div style={{
             marginTop: 16,
             fontSize: 22,
@@ -433,7 +585,7 @@ function App() {
                 />
                 Show string names on fretboard
               </label>
-              <label style={{ display: 'block', marginBottom: 10, fontSize: 16 }}>
+              <label style={{ display: 'block', marginBottom: 14, fontSize: 16 }}>
                 Fretboard color:
                 <input
                   type="color"
@@ -441,6 +593,27 @@ function App() {
                   onChange={handleColorChange}
                   style={{ marginLeft: 10, verticalAlign: 'middle', border: '1px solid var(--border)' }}
                 />
+              </label>
+              <label style={{ display: 'block', marginBottom: 14, fontSize: 16 }}>
+                Base timer (seconds):
+                <input
+                  type="range"
+                  min="2"
+                  max="10"
+                  value={settings.baseTimer}
+                  onChange={handleTimerChange}
+                  style={{ marginLeft: 10, marginRight: 10 }}
+                />
+                <span style={{ fontWeight: 600 }}>{settings.baseTimer}s</span>
+              </label>
+              <label style={{ display: 'block', marginBottom: 10, fontSize: 16 }}>
+                <input
+                  type="checkbox"
+                  checked={settings.adaptiveTiming}
+                  onChange={handleAdaptiveTimingToggle}
+                  style={{ marginRight: 10 }}
+                />
+                Adaptive timing (adjust based on performance)
               </label>
             </div>
           </div>
