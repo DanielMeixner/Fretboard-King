@@ -139,17 +139,20 @@ function App() {
   React.useEffect(() => {
     const storedDate = localStorage.getItem(DATE_KEY);
     if (storedDate !== todayStr()) {
+      // Store the previous day's score before resetting
+      const previousScore = localStorage.getItem(SCORE_KEY) || '0';
+      
       // Move yesterday's score
-      localStorage.setItem(YESTERDAY_KEY, localStorage.getItem(SCORE_KEY) || '0');
+      localStorage.setItem(YESTERDAY_KEY, previousScore);
       localStorage.setItem(SCORE_KEY, '0');
       localStorage.setItem(DATE_KEY, todayStr());
-      setYesterdayScore(parseInt(localStorage.getItem(SCORE_KEY) || '0', 10));
+      setYesterdayScore(parseInt(previousScore, 10));
       setScore(0);
       // Add yesterday's score to history
       setHistory((prev) => {
         const newHist = { ...prev };
         const yest = storedDate || todayStr();
-        newHist[yest] = parseInt(localStorage.getItem(SCORE_KEY) || '0', 10);
+        newHist[yest] = parseInt(previousScore, 10);
         localStorage.setItem(HISTORY_KEY, JSON.stringify(newHist));
         return newHist;
       });
