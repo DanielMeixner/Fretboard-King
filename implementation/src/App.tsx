@@ -30,7 +30,7 @@ import './App.css';
 import logo from './logo.svg';
 
 
-const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning: index 0 = 1st string (high E), index 5 = 6th string (low E)
+const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning: index 0 = 1st string (high E), index 5 = 6th string (low E). Display: high E at top, low E at bottom (standard TAB notation)
 const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const QUESTIONS_PER_ROUND = 15;
@@ -38,6 +38,7 @@ const MAX_LEVEL = 15;
 
 // Level progression: determines which strings and frets are available at each level
 // Note: String indices follow guitar numbering (0 = 1st string/high E, 5 = 6th string/low E)
+// Display: 1st string (high E) shown at TOP (standard TAB notation)
 // Level 0: String 0 (1st string, high E), frets 0-2
 // Level 1: Strings 0-1 (1st-2nd strings: high E, B), frets 0-2
 // Level 2: Strings 0-1, frets 0-3
@@ -809,42 +810,38 @@ function Fretboard({ highlight, showStringNames = true, fretboardColor = '#222' 
         }}
       >
         <tbody>
-          {[...STRINGS].reverse().map((string, displayIdx) => {
-            // Reverse the display so string index 0 (1st string, high E) is at the bottom
-            const sIdx = STRINGS.length - 1 - displayIdx;
-            return (
-              <tr key={sIdx}>
-                {[...Array(FRETS + 1)].map((_, fIdx) => {
-                  const isHighlight =
-                    highlight && sIdx === highlight.stringIdx && fIdx === highlight.fretIdx;
-                  return (
-                    <td
-                      key={fIdx}
-                      style={{
-                        border: '1px solid var(--border)',
-                        width: fIdx === 0 ? 44 : 'auto',
-                        height: 44,
-                        background: fIdx === 0
-                          ? 'var(--surface)'
-                          : isHighlight
-                            ? 'var(--primary)'
-                            : fretboardColor,
-                        color: fIdx === 0 ? 'var(--on-primary)' : '#b0b0b0',
-                        textAlign: 'center',
-                        position: 'relative',
-                        padding: 0,
-                        fontWeight: fIdx === 0 ? 600 : 400,
-                        fontSize: fIdx === 0 ? 18 : 16,
-                        transition: 'background 0.2s',
-                      }}
-                    >
-                      {fIdx === 0 && showStringNames ? string : ''}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
+          {STRINGS.map((string, sIdx) => (
+            <tr key={sIdx}>
+              {[...Array(FRETS + 1)].map((_, fIdx) => {
+                const isHighlight =
+                  highlight && sIdx === highlight.stringIdx && fIdx === highlight.fretIdx;
+                return (
+                  <td
+                    key={fIdx}
+                    style={{
+                      border: '1px solid var(--border)',
+                      width: fIdx === 0 ? 44 : 'auto',
+                      height: 44,
+                      background: fIdx === 0
+                        ? 'var(--surface)'
+                        : isHighlight
+                          ? 'var(--primary)'
+                          : fretboardColor,
+                      color: fIdx === 0 ? 'var(--on-primary)' : '#b0b0b0',
+                      textAlign: 'center',
+                      position: 'relative',
+                      padding: 0,
+                      fontWeight: fIdx === 0 ? 600 : 400,
+                      fontSize: fIdx === 0 ? 18 : 16,
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    {fIdx === 0 && showStringNames ? string : ''}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
         </tbody>
       </table>
       {/* Render marker dots absolutely over the table, one per marked fret, two for 12th fret */}
