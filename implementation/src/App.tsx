@@ -33,6 +33,8 @@ import logo from './logo.svg';
 const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning, low E at bottom
 const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const QUESTIONS_PER_ROUND = 15;
+const MAX_LEVEL = 15;
 
 // Level progression: determines which strings and frets are available at each level
 // Level 0: String 0 (high E), frets 0-2
@@ -58,13 +60,13 @@ function getLevelConstraints(level: number): { maxString: number; maxFret: numbe
   if (level === 13) return { maxString: 5, maxFret: 10 }; // All strings, 11 frets
   if (level === 14) return { maxString: 5, maxFret: 11 }; // All strings, 12 frets
   // Level 15+: All strings and frets
-  return { maxString: 5, maxFret: 12 };
+  return { maxString: 5, maxFret: FRETS - 1 };
 }
 
 // Calculate required score to pass a level (percentage-based on round)
 function getRequiredScoreForLevel(_level: number): number {
   // Require 80% correct answers in a round to pass
-  return Math.ceil(15 * 0.8); // 12 out of 15
+  return Math.ceil(QUESTIONS_PER_ROUND * 0.8); // 12 out of 15
 }
 
 function getNoteName(openNote: string, fret: number) {
@@ -210,7 +212,6 @@ function App() {
   const [roundActive, setRoundActive] = useState(false);
   const [questionsInRound, setQuestionsInRound] = useState(0);
   const [roundScore, setRoundScore] = useState(0);
-  const QUESTIONS_PER_ROUND = 15;
 
   // Calculate dynamic timer based on score and settings
   const getCalculatedTimer = React.useCallback((): number => {
@@ -245,7 +246,7 @@ function App() {
     const requiredScore = getRequiredScoreForLevel(playerLevel);
     const passed = roundScore >= requiredScore;
     
-    if (passed && playerLevel < 15) {
+    if (passed && playerLevel < MAX_LEVEL) {
       setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Level up! 🎉`);
       setPlayerLevel((level) => level + 1);
     } else if (passed) {
