@@ -39,31 +39,32 @@ const MAX_LEVEL = 15;
 // Level progression: determines which strings and frets are available at each level
 // Note: String indices follow guitar numbering (0 = 1st string/high E, 5 = 6th string/low E)
 // Display: 1st string (high E) shown at TOP (standard TAB notation)
-// Level 0: String 0 (1st string, high E), frets 0-2
-// Level 1: Strings 0-1 (1st-2nd strings: high E, B), frets 0-2
-// Level 2: Strings 0-1, frets 0-3
-// Level 3: Strings 0-1, frets 0-4
-// Level 4: Strings 0-2 (1st-3rd strings: high E, B, G), frets 0-4
+// Progression: Start with LOW strings (6th string/low E) and progress to HIGH strings
+// Level 0: String 5 (6th string, low E), frets 0-2
+// Level 1: Strings 4-5 (5th-6th strings: A, low E), frets 0-2
+// Level 2: Strings 4-5, frets 0-3
+// Level 3: Strings 4-5, frets 0-4
+// Level 4: Strings 3-5 (4th-6th strings: D, A, low E), frets 0-4
 // ... and so on up to level MAX_LEVEL-1
 // Level MAX_LEVEL+: All strings and frets unlocked
-function getLevelConstraints(level: number): { maxString: number; maxFret: number } {
-  if (level === 0) return { maxString: 0, maxFret: 2 }; // 1st string (high E), first 3 frets (0-2)
-  if (level === 1) return { maxString: 1, maxFret: 2 }; // 1st-2nd strings (E, B), first 3 frets
-  if (level === 2) return { maxString: 1, maxFret: 3 }; // 1st-2nd strings, 4 frets
-  if (level === 3) return { maxString: 1, maxFret: 4 }; // 1st-2nd strings, 5 frets
-  if (level === 4) return { maxString: 2, maxFret: 4 }; // 1st-3rd strings (E, B, G), 5 frets
-  if (level === 5) return { maxString: 2, maxFret: 5 }; // 1st-3rd strings, 6 frets
-  if (level === 6) return { maxString: 3, maxFret: 5 }; // 1st-4th strings (E, B, G, D), 6 frets
-  if (level === 7) return { maxString: 3, maxFret: 6 }; // 1st-4th strings, 7 frets
-  if (level === 8) return { maxString: 4, maxFret: 6 }; // 1st-5th strings (E, B, G, D, A), 7 frets
-  if (level === 9) return { maxString: 4, maxFret: 7 }; // 1st-5th strings, 8 frets
-  if (level === 10) return { maxString: 5, maxFret: 7 }; // All strings, 8 frets
-  if (level === 11) return { maxString: 5, maxFret: 8 }; // All strings, 9 frets
-  if (level === 12) return { maxString: 5, maxFret: 9 }; // All strings, 10 frets
-  if (level === 13) return { maxString: 5, maxFret: 10 }; // All strings, 11 frets
-  if (level === 14) return { maxString: 5, maxFret: 11 }; // All strings, 12 frets
+function getLevelConstraints(level: number): { minString: number; maxFret: number } {
+  if (level === 0) return { minString: 5, maxFret: 2 }; // 6th string (low E), first 3 frets (0-2)
+  if (level === 1) return { minString: 4, maxFret: 2 }; // 5th-6th strings (A, E), first 3 frets
+  if (level === 2) return { minString: 4, maxFret: 3 }; // 5th-6th strings, 4 frets
+  if (level === 3) return { minString: 4, maxFret: 4 }; // 5th-6th strings, 5 frets
+  if (level === 4) return { minString: 3, maxFret: 4 }; // 4th-6th strings (D, A, E), 5 frets
+  if (level === 5) return { minString: 3, maxFret: 5 }; // 4th-6th strings, 6 frets
+  if (level === 6) return { minString: 2, maxFret: 5 }; // 3rd-6th strings (G, D, A, E), 6 frets
+  if (level === 7) return { minString: 2, maxFret: 6 }; // 3rd-6th strings, 7 frets
+  if (level === 8) return { minString: 1, maxFret: 6 }; // 2nd-6th strings (B, G, D, A, E), 7 frets
+  if (level === 9) return { minString: 1, maxFret: 7 }; // 2nd-6th strings, 8 frets
+  if (level === 10) return { minString: 0, maxFret: 7 }; // All strings, 8 frets
+  if (level === 11) return { minString: 0, maxFret: 8 }; // All strings, 9 frets
+  if (level === 12) return { minString: 0, maxFret: 9 }; // All strings, 10 frets
+  if (level === 13) return { minString: 0, maxFret: 10 }; // All strings, 11 frets
+  if (level === 14) return { minString: 0, maxFret: 11 }; // All strings, 12 frets
   // Level MAX_LEVEL+: All strings and frets
-  return { maxString: 5, maxFret: FRETS - 1 };
+  return { minString: 0, maxFret: FRETS - 1 };
 }
 
 // Calculate required score to pass a level (percentage-based on round)
@@ -87,7 +88,9 @@ function getRandomQuiz(level: number = 15) {
   const constraints = getLevelConstraints(level);
   
   // Pick a random string and fret within level constraints
-  const stringIdx = getRandomInt(constraints.maxString + 1);
+  // String range is from minString to 5 (6th string is always index 5)
+  const stringRange = 5 - constraints.minString + 1;
+  const stringIdx = constraints.minString + getRandomInt(stringRange);
   const fretIdx = 1 + getRandomInt(constraints.maxFret); // 1..maxFret (not including open string in quiz)
   const correctNote = getNoteName(STRINGS[stringIdx], fretIdx);
   // Pick 2 random incorrect notes
@@ -473,7 +476,7 @@ function App() {
       }}>
         {(() => {
           const constraints = getLevelConstraints(playerLevel);
-          const stringCount = constraints.maxString + 1;
+          const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
           const fretCount = constraints.maxFret + 1; // Including open string for display
           return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel(playerLevel)}/${QUESTIONS_PER_ROUND} to level up)`;
         })()}
