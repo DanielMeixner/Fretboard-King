@@ -5,6 +5,7 @@ import './global-modern.css';
 import { theme } from './theme';
 // Settings keys
 const SETTINGS_KEY = 'fbk_settings';
+const PLAYER_LEVEL_KEY = 'fbk_player_level';
 
 type Settings = {
   showStringNames: boolean;
@@ -29,9 +30,48 @@ import './App.css';
 import logo from './logo.svg';
 
 
-const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning, low E at bottom
+const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning: index 0 = 1st string (high E), index 5 = 6th string (low E). Display: high E at top, low E at bottom (standard TAB notation)
 const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const QUESTIONS_PER_ROUND = 15;
+const MAX_LEVEL = 15;
+
+// Level progression: determines which strings and frets are available at each level
+// Note: String indices follow guitar numbering (0 = 1st string/high E, 5 = 6th string/low E)
+// Display: 1st string (high E) shown at TOP (standard TAB notation)
+// Progression: Start with LOW strings (6th string/low E) and progress to HIGH strings
+// Level 0: String 5 (6th string, low E), frets 0-2
+// Level 1: Strings 4-5 (5th-6th strings: A, low E), frets 0-2
+// Level 2: Strings 4-5, frets 0-3
+// Level 3: Strings 4-5, frets 0-4
+// Level 4: Strings 3-5 (4th-6th strings: D, A, low E), frets 0-4
+// ... and so on up to level MAX_LEVEL-1
+// Level MAX_LEVEL+: All strings and frets unlocked
+function getLevelConstraints(level: number): { minString: number; maxFret: number } {
+  if (level === 0) return { minString: 5, maxFret: 2 }; // 6th string (low E), first 3 frets (0-2)
+  if (level === 1) return { minString: 4, maxFret: 2 }; // 5th-6th strings (A, E), first 3 frets
+  if (level === 2) return { minString: 4, maxFret: 3 }; // 5th-6th strings, 4 frets
+  if (level === 3) return { minString: 4, maxFret: 4 }; // 5th-6th strings, 5 frets
+  if (level === 4) return { minString: 3, maxFret: 4 }; // 4th-6th strings (D, A, E), 5 frets
+  if (level === 5) return { minString: 3, maxFret: 5 }; // 4th-6th strings, 6 frets
+  if (level === 6) return { minString: 2, maxFret: 5 }; // 3rd-6th strings (G, D, A, E), 6 frets
+  if (level === 7) return { minString: 2, maxFret: 6 }; // 3rd-6th strings, 7 frets
+  if (level === 8) return { minString: 1, maxFret: 6 }; // 2nd-6th strings (B, G, D, A, E), 7 frets
+  if (level === 9) return { minString: 1, maxFret: 7 }; // 2nd-6th strings, 8 frets
+  if (level === 10) return { minString: 0, maxFret: 7 }; // All strings, 8 frets
+  if (level === 11) return { minString: 0, maxFret: 8 }; // All strings, 9 frets
+  if (level === 12) return { minString: 0, maxFret: 9 }; // All strings, 10 frets
+  if (level === 13) return { minString: 0, maxFret: 10 }; // All strings, 11 frets
+  if (level === 14) return { minString: 0, maxFret: 11 }; // All strings, 12 frets
+  // Level MAX_LEVEL+: All strings and frets
+  return { minString: 0, maxFret: FRETS - 1 };
+}
+
+// Calculate required score to pass a level (percentage-based on round)
+function getRequiredScoreForLevel(_level: number): number {
+  // Require 80% correct answers in a round to pass
+  return Math.ceil(QUESTIONS_PER_ROUND * 0.8); // 12 out of 15
+}
 
 function getNoteName(openNote: string, fret: number) {
   const openIdx = NOTE_NAMES.indexOf(openNote);
@@ -43,10 +83,15 @@ function getRandomInt(max: number) {
   return Math.floor(Math.random() * max);
 }
 
-function getRandomQuiz() {
-  // Pick a random string and fret (not open string)
-  const stringIdx = getRandomInt(STRINGS.length);
-  const fretIdx = 1 + getRandomInt(FRETS); // 1..12
+function getRandomQuiz(level: number = 15) {
+  // Get constraints for this level
+  const constraints = getLevelConstraints(level);
+  
+  // Pick a random string and fret within level constraints
+  // String range is from minString to 5 (6th string is always index 5)
+  const stringRange = 5 - constraints.minString + 1;
+  const stringIdx = constraints.minString + getRandomInt(stringRange);
+  const fretIdx = 1 + getRandomInt(constraints.maxFret); // 1..maxFret (not including open string in quiz)
   const correctNote = getNoteName(STRINGS[stringIdx], fretIdx);
   // Pick 2 random incorrect notes
   let options = [correctNote];
@@ -87,10 +132,26 @@ function App() {
     }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  // Player level state
+  const [playerLevel, setPlayerLevel] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem(PLAYER_LEVEL_KEY);
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+  
   // Persist settings
   React.useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
+  
+  // Persist player level
+  React.useEffect(() => {
+    localStorage.setItem(PLAYER_LEVEL_KEY, playerLevel.toString());
+  }, [playerLevel]);
   // Settings handlers
   function handleToggleStringNames() {
     setSettings((s) => ({ ...s, showStringNames: !s.showStringNames }));
@@ -103,6 +164,13 @@ function App() {
   }
   function handleAdaptiveTimingToggle() {
     setSettings((s) => ({ ...s, adaptiveTiming: !s.adaptiveTiming }));
+  }
+  
+  function handleResetLevel() {
+    if (confirm('Are you sure you want to reset your level to 0? This cannot be undone.')) {
+      setPlayerLevel(0);
+      localStorage.setItem(PLAYER_LEVEL_KEY, '0');
+    }
   }
 
   // Local storage keys
@@ -141,7 +209,7 @@ function App() {
       return {};
     }
   });
-  const [quiz, setQuiz] = useState(getRandomQuiz());
+  const [quiz, setQuiz] = useState(getRandomQuiz(0)); // Start with level 0 constraints
   const [selected, setSelected] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(5);
@@ -150,7 +218,6 @@ function App() {
   const [roundActive, setRoundActive] = useState(false);
   const [questionsInRound, setQuestionsInRound] = useState(0);
   const [roundScore, setRoundScore] = useState(0);
-  const QUESTIONS_PER_ROUND = 15;
 
   // Calculate dynamic timer based on score and settings
   const getCalculatedTimer = React.useCallback((): number => {
@@ -174,18 +241,29 @@ function App() {
     setRoundActive(true);
     setQuestionsInRound(0);
     setRoundScore(0);
-    setQuiz(getRandomQuiz());
+    setQuiz(getRandomQuiz(playerLevel));
     // Timer will be set by the next useEffect once roundActive is true
     setSelected(null);
     setFeedback(null);
-  }, []);
+  }, [playerLevel]);
 
   const endRound = React.useCallback(() => {
     setRoundActive(false);
-    setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND}`);
+    const requiredScore = getRequiredScoreForLevel(playerLevel);
+    const passed = roundScore >= requiredScore;
+    
+    if (passed && playerLevel < MAX_LEVEL) {
+      setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Level up! 🎉`);
+      setPlayerLevel((level) => level + 1);
+    } else if (passed) {
+      setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Maximum level reached! 🎉`);
+    } else {
+      setFeedback(`Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Need ${requiredScore} to level up. Try again!`);
+    }
+    
     // Add round score to total score
     setScore((s) => s + roundScore);
-  }, [roundScore, QUESTIONS_PER_ROUND]);
+  }, [roundScore, QUESTIONS_PER_ROUND, playerLevel]);
 
   const stopRound = React.useCallback(() => {
     setRoundActive(false);
@@ -245,7 +323,7 @@ function App() {
           endRound();
         } else {
           setQuestionsInRound(nextQuestionNum);
-          setQuiz(getRandomQuiz());
+          setQuiz(getRandomQuiz(playerLevel));
           setTimer(getCalculatedTimer());
         }
       }, 1200);
@@ -253,7 +331,7 @@ function App() {
     }
     const t = setTimeout(() => setTimer(timer - 1), 1000);
     return () => clearTimeout(t);
-  }, [timer, selected, roundActive, questionsInRound, endRound, getCalculatedTimer]);
+  }, [timer, selected, roundActive, questionsInRound, endRound, getCalculatedTimer, playerLevel]);
 
   // Set initial timer when round starts
   React.useEffect(() => {
@@ -284,11 +362,11 @@ function App() {
         endRound();
       } else {
         setQuestionsInRound(nextQuestionNum);
-        setQuiz(getRandomQuiz());
+        setQuiz(getRandomQuiz(playerLevel));
         setTimer(getCalculatedTimer());
       }
     }, 1200);
-  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer]);
+  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer, playerLevel]);
 
   // Get last 30 days for chart
   function getLast30Days() {
@@ -383,11 +461,25 @@ function App() {
         fontSize: 20,
         color: 'var(--on-surface)',
       }}>
+        <span>Level: <b style={{ color: 'var(--primary)' }}>{playerLevel}</b></span>
         <span>Total Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
         {roundActive && (
           <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
         )}
         <span style={{ color: '#888', fontSize: 16 }}>Yesterday: {yesterdayScore}</span>
+      </div>
+      <div style={{
+        textAlign: 'center',
+        fontSize: 14,
+        color: '#888',
+        marginBottom: theme.spacing(1),
+      }}>
+        {(() => {
+          const constraints = getLevelConstraints(playerLevel);
+          const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
+          const fretCount = constraints.maxFret + 1; // Including open string for display
+          return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel(playerLevel)}/${QUESTIONS_PER_ROUND} to level up)`;
+        })()}
       </div>
       <BarChart history={history} getLast30Days={getLast30Days} />
       <Fretboard
@@ -615,6 +707,31 @@ function App() {
                 />
                 Adaptive timing (adjust based on performance)
               </label>
+              <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 16, color: 'var(--on-surface)' }}>Level Progress</h4>
+                <p style={{ fontSize: 14, color: '#888', margin: '0 0 10px 0' }}>
+                  Current level: <b style={{ color: 'var(--primary)' }}>{playerLevel}</b>
+                </p>
+                <button
+                  onClick={handleResetLevel}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: 14,
+                    background: 'var(--error)',
+                    color: 'var(--on-primary)',
+                    border: 'none',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    boxShadow: 'var(--shadow)',
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.opacity = '0.8')}
+                  onMouseOut={e => (e.currentTarget.style.opacity = '1')}
+                >
+                  Reset Level to 0
+                </button>
+              </div>
             </div>
           </div>
         </div>
