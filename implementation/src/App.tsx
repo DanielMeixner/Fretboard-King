@@ -42,7 +42,8 @@ const MAX_LEVEL = 15;
 // Level 2: Strings 0-1, frets 0-3
 // Level 3: Strings 0-1, frets 0-4
 // Level 4: Strings 0-2 (high E, B, G), frets 0-4
-// ... and so on
+// ... and so on up to level MAX_LEVEL-1
+// Level MAX_LEVEL+: All strings and frets unlocked
 function getLevelConstraints(level: number): { maxString: number; maxFret: number } {
   if (level === 0) return { maxString: 0, maxFret: 2 }; // First string, first 3 notes (0-2)
   if (level === 1) return { maxString: 1, maxFret: 2 }; // Two strings, first 3 notes
@@ -59,7 +60,7 @@ function getLevelConstraints(level: number): { maxString: number; maxFret: numbe
   if (level === 12) return { maxString: 5, maxFret: 9 }; // All strings, 10 frets
   if (level === 13) return { maxString: 5, maxFret: 10 }; // All strings, 11 frets
   if (level === 14) return { maxString: 5, maxFret: 11 }; // All strings, 12 frets
-  // Level 15+: All strings and frets
+  // Level MAX_LEVEL+: All strings and frets
   return { maxString: 5, maxFret: FRETS - 1 };
 }
 
