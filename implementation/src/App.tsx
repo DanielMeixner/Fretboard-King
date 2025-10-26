@@ -30,31 +30,32 @@ import './App.css';
 import logo from './logo.svg';
 
 
-const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning, low E at bottom
+const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning: index 0 = 1st string (high E), index 5 = 6th string (low E)
 const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const QUESTIONS_PER_ROUND = 15;
 const MAX_LEVEL = 15;
 
 // Level progression: determines which strings and frets are available at each level
-// Level 0: String 0 (high E), frets 0-2
-// Level 1: Strings 0-1 (high E, B), frets 0-2
+// Note: String indices follow guitar numbering (0 = 1st string/high E, 5 = 6th string/low E)
+// Level 0: String 0 (1st string, high E), frets 0-2
+// Level 1: Strings 0-1 (1st-2nd strings: high E, B), frets 0-2
 // Level 2: Strings 0-1, frets 0-3
 // Level 3: Strings 0-1, frets 0-4
-// Level 4: Strings 0-2 (high E, B, G), frets 0-4
+// Level 4: Strings 0-2 (1st-3rd strings: high E, B, G), frets 0-4
 // ... and so on up to level MAX_LEVEL-1
 // Level MAX_LEVEL+: All strings and frets unlocked
 function getLevelConstraints(level: number): { maxString: number; maxFret: number } {
-  if (level === 0) return { maxString: 0, maxFret: 2 }; // First string, first 3 notes (0-2)
-  if (level === 1) return { maxString: 1, maxFret: 2 }; // Two strings, first 3 notes
-  if (level === 2) return { maxString: 1, maxFret: 3 }; // Two strings, 4 frets
-  if (level === 3) return { maxString: 1, maxFret: 4 }; // Two strings, 5 frets
-  if (level === 4) return { maxString: 2, maxFret: 4 }; // Three strings, 5 frets
-  if (level === 5) return { maxString: 2, maxFret: 5 }; // Three strings, 6 frets
-  if (level === 6) return { maxString: 3, maxFret: 5 }; // Four strings, 6 frets
-  if (level === 7) return { maxString: 3, maxFret: 6 }; // Four strings, 7 frets
-  if (level === 8) return { maxString: 4, maxFret: 6 }; // Five strings, 7 frets
-  if (level === 9) return { maxString: 4, maxFret: 7 }; // Five strings, 8 frets
+  if (level === 0) return { maxString: 0, maxFret: 2 }; // 1st string (high E), first 3 frets (0-2)
+  if (level === 1) return { maxString: 1, maxFret: 2 }; // 1st-2nd strings (E, B), first 3 frets
+  if (level === 2) return { maxString: 1, maxFret: 3 }; // 1st-2nd strings, 4 frets
+  if (level === 3) return { maxString: 1, maxFret: 4 }; // 1st-2nd strings, 5 frets
+  if (level === 4) return { maxString: 2, maxFret: 4 }; // 1st-3rd strings (E, B, G), 5 frets
+  if (level === 5) return { maxString: 2, maxFret: 5 }; // 1st-3rd strings, 6 frets
+  if (level === 6) return { maxString: 3, maxFret: 5 }; // 1st-4th strings (E, B, G, D), 6 frets
+  if (level === 7) return { maxString: 3, maxFret: 6 }; // 1st-4th strings, 7 frets
+  if (level === 8) return { maxString: 4, maxFret: 6 }; // 1st-5th strings (E, B, G, D, A), 7 frets
+  if (level === 9) return { maxString: 4, maxFret: 7 }; // 1st-5th strings, 8 frets
   if (level === 10) return { maxString: 5, maxFret: 7 }; // All strings, 8 frets
   if (level === 11) return { maxString: 5, maxFret: 8 }; // All strings, 9 frets
   if (level === 12) return { maxString: 5, maxFret: 9 }; // All strings, 10 frets
@@ -808,38 +809,42 @@ function Fretboard({ highlight, showStringNames = true, fretboardColor = '#222' 
         }}
       >
         <tbody>
-          {STRINGS.map((string, sIdx) => (
-            <tr key={sIdx}>
-              {[...Array(FRETS + 1)].map((_, fIdx) => {
-                const isHighlight =
-                  highlight && sIdx === highlight.stringIdx && fIdx === highlight.fretIdx;
-                return (
-                  <td
-                    key={fIdx}
-                    style={{
-                      border: '1px solid var(--border)',
-                      width: fIdx === 0 ? 44 : 'auto',
-                      height: 44,
-                      background: fIdx === 0
-                        ? 'var(--surface)'
-                        : isHighlight
-                          ? 'var(--primary)'
-                          : fretboardColor,
-                      color: fIdx === 0 ? 'var(--on-primary)' : '#b0b0b0',
-                      textAlign: 'center',
-                      position: 'relative',
-                      padding: 0,
-                      fontWeight: fIdx === 0 ? 600 : 400,
-                      fontSize: fIdx === 0 ? 18 : 16,
-                      transition: 'background 0.2s',
-                    }}
-                  >
-                    {fIdx === 0 && showStringNames ? string : ''}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+          {[...STRINGS].reverse().map((string, displayIdx) => {
+            // Reverse the display so string index 0 (1st string, high E) is at the bottom
+            const sIdx = STRINGS.length - 1 - displayIdx;
+            return (
+              <tr key={sIdx}>
+                {[...Array(FRETS + 1)].map((_, fIdx) => {
+                  const isHighlight =
+                    highlight && sIdx === highlight.stringIdx && fIdx === highlight.fretIdx;
+                  return (
+                    <td
+                      key={fIdx}
+                      style={{
+                        border: '1px solid var(--border)',
+                        width: fIdx === 0 ? 44 : 'auto',
+                        height: 44,
+                        background: fIdx === 0
+                          ? 'var(--surface)'
+                          : isHighlight
+                            ? 'var(--primary)'
+                            : fretboardColor,
+                        color: fIdx === 0 ? 'var(--on-primary)' : '#b0b0b0',
+                        textAlign: 'center',
+                        position: 'relative',
+                        padding: 0,
+                        fontWeight: fIdx === 0 ? 600 : 400,
+                        fontSize: fIdx === 0 ? 18 : 16,
+                        transition: 'background 0.2s',
+                      }}
+                    >
+                      {fIdx === 0 && showStringNames ? string : ''}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {/* Render marker dots absolutely over the table, one per marked fret, two for 12th fret */}
