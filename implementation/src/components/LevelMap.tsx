@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface LevelMapProps {
   currentLevel: number;
@@ -6,11 +6,29 @@ interface LevelMapProps {
 }
 
 const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
-  // Create an array of all levels (0 to maxLevel)
-  const levels = Array.from({ length: maxLevel + 1 }, (_, i) => i);
-
-  // Calculate grid layout - 4 columns for better visual flow
-  const columns = 4;
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Calculate completed levels (all levels below current)
+  const completedLevels = Array.from({ length: currentLevel }, (_, i) => i + 1).join(',');
+  
+  useEffect(() => {
+    // Create and mount the web component
+    if (mapContainerRef.current) {
+      // Clear any existing content
+      mapContainerRef.current.innerHTML = '';
+      
+      // Create the web component element
+      const levelMapElement = document.createElement('game-level-map');
+      levelMapElement.setAttribute('levels', String(maxLevel + 1));
+      levelMapElement.setAttribute('current-level', String(currentLevel + 1));
+      levelMapElement.setAttribute('completed-levels', completedLevels);
+      levelMapElement.setAttribute('marker-size', '50');
+      levelMapElement.setAttribute('spacing', '100');
+      
+      // Append to container
+      mapContainerRef.current.appendChild(levelMapElement);
+    }
+  }, [currentLevel, maxLevel, completedLevels]);
 
   return (
     <div
@@ -19,7 +37,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         color: 'var(--on-surface)',
         borderRadius: 'var(--radius)',
         width: '100%',
-        maxWidth: '800px',
+        maxWidth: '1200px',
         margin: '0 auto',
         padding: '32px',
         boxShadow: 'var(--shadow)',
@@ -48,140 +66,32 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
       >
         Your Progress: Level <strong style={{ color: 'var(--primary)' }}>{currentLevel}</strong> / {maxLevel}
       </p>
-
-      {/* Level Grid */}
-      <div
+      <p
         style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: '16px',
+          textAlign: 'center',
+          color: '#888',
+          fontSize: 14,
           marginBottom: 24,
         }}
       >
-        {levels.map((level) => {
-          const isCompleted = level < currentLevel;
-          const isCurrent = level === currentLevel;
-          const isLocked = level > currentLevel;
+        Total Levels Available: <strong>{maxLevel + 1}</strong> (Levels 0-{maxLevel})
+      </p>
 
-          return (
-            <div
-              key={level}
-              style={{
-                position: 'relative',
-                aspectRatio: '1',
-                background: isCompleted
-                  ? 'var(--secondary)'
-                  : isCurrent
-                  ? 'var(--primary)'
-                  : 'var(--surface-variant)',
-                border: `2px solid ${
-                  isCompleted
-                    ? 'var(--secondary)'
-                    : isCurrent
-                    ? 'var(--primary)'
-                    : 'var(--border)'
-                }`,
-                borderRadius: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'default',
-                transition: 'all 0.2s',
-                boxShadow: isCurrent ? '0 4px 12px rgba(0,0,0,0.3)' : 'none',
-                opacity: isLocked ? 0.5 : 1,
-              }}
-            >
-              {/* Level Number */}
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: isCompleted || isCurrent ? 'var(--on-primary)' : 'var(--on-surface)',
-                }}
-              >
-                {level}
-              </div>
-
-              {/* Status Icon */}
-              <div
-                style={{
-                  fontSize: 20,
-                  marginTop: 4,
-                }}
-              >
-                {isCompleted ? '✓' : isCurrent ? '👑' : '🔒'}
-              </div>
-
-              {/* Current indicator */}
-              {isCurrent && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: -8,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'var(--primary)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Current
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
+      {/* Game Level Map Web Component Container */}
+      <div ref={mapContainerRef} style={{ width: '100%', overflow: 'auto' }} />
+      
+      {/* Info text */}
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 24,
-          flexWrap: 'wrap',
+          marginTop: 24,
+          textAlign: 'center',
           fontSize: 14,
           color: 'var(--on-surface)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              background: 'var(--secondary)',
-              borderRadius: '4px',
-              display: 'inline-block',
-            }}
-          />
-          <span>Completed</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              background: 'var(--primary)',
-              borderRadius: '4px',
-              display: 'inline-block',
-            }}
-          />
-          <span>Current Level</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              background: 'var(--surface-variant)',
-              border: '1px solid var(--border)',
-              borderRadius: '4px',
-              display: 'inline-block',
-            }}
-          />
-          <span>Locked</span>
-        </div>
+        <p style={{ margin: '8px 0' }}>
+          Complete rounds with at least 12/15 correct answers to unlock the next level!
+        </p>
       </div>
     </div>
   );
