@@ -31,6 +31,7 @@ import ColorModeToggle from './components/ColorModeToggle';
 import { useContext } from 'react';
 import { ColorModeContext } from './components/ColorModeContext';
 import LevelMap from './components/LevelMap';
+import Tabs from './components/Tabs';
 import './App.css';
 import logo from './logo.svg';
 
@@ -176,7 +177,7 @@ function App() {
   });
   
   // Tab state
-  const [activeTab] = useState<string>('play');
+  const [activeTab, setActiveTab] = useState<string>('play');
   
   // Persist settings
   React.useEffect(() => {
@@ -500,6 +501,17 @@ function App() {
           letterSpacing: '-1px',
         }}>Fretboard-King</h1>
       </header>
+      
+      {/* Tabs Navigation */}
+      <Tabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tabs={[
+          { id: 'play', label: 'Play', icon: '🎸' },
+          { id: 'map', label: 'Level Map', icon: '🗺️' }
+        ]}
+      />
+      
       <div style={{
         display: 'flex',
         justifyContent: 'center',
