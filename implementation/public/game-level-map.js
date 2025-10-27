@@ -175,15 +175,15 @@ class GameLevelMap extends HTMLElement {
         <g class="section-group">
           <!-- Section background -->
           <rect x="${minX}" y="${sectionY}" width="${width}" height="${sectionHeight}"
-                fill="${section.color}" opacity="0.3" rx="15" class="section-background"/>
+                fill="${section.color}" opacity="0.4" rx="15" class="section-background"/>
           <!-- Section border -->
           <rect x="${minX}" y="${sectionY}" width="${width}" height="${sectionHeight}"
-                fill="none" stroke="${section.color}" stroke-width="2" 
+                fill="none" stroke="${section.color}" stroke-width="3" 
                 stroke-dasharray="5,5" rx="15" class="section-border"/>
           <!-- Section label -->
           <text x="${minX + width / 2}" y="${padding + 20}" 
                 text-anchor="middle" class="section-label"
-                fill="#333" font-weight="bold" font-size="16px">
+                fill="#000" font-weight="bold" font-size="18px">
             ${section.name}
           </text>
         </g>
