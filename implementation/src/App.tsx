@@ -30,7 +30,6 @@ function getDefaultSettings(): Settings {
 import ColorModeToggle from './components/ColorModeToggle';
 import { useContext } from 'react';
 import { ColorModeContext } from './components/ColorModeContext';
-import Tabs from './components/Tabs';
 import LevelMap from './components/LevelMap';
 import './App.css';
 import logo from './logo.svg';
@@ -177,7 +176,7 @@ function App() {
   });
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<string>('play');
+  const [activeTab] = useState<string>('play');
   
   // Persist settings
   React.useEffect(() => {
