@@ -661,7 +661,7 @@ function App() {
             <h2 style={{ marginTop: 0, color: 'var(--on-primary)', fontWeight: 600, fontSize: 26 }}>Settings & Stats</h2>
             <div style={{ marginBottom: 18 }}>
               <h3 style={{ margin: '12px 0 6px 0', fontSize: 16, color: 'var(--on-surface)' }}>Stats</h3>
-              <BarChart history={history} getLast30Days={getLast30Days} />
+              <BarChart history={history} getLast30Days={getLast30Days} compact={true} />
             </div>
             <div>
               <h3 style={{ margin: '12px 0 6px 0', fontSize: 16, color: 'var(--on-surface)' }}>Settings</h3>
@@ -740,33 +740,33 @@ function App() {
   );
 
 // Simple SVG bar chart for last 30 days
-function BarChart({ history, getLast30Days }: { history: { [date: string]: number }, getLast30Days: () => string[] }) {
+function BarChart({ history, getLast30Days, compact = false }: { history: { [date: string]: number }, getLast30Days: () => string[], compact?: boolean }) {
   const days = getLast30Days();
   const values = days.map((d) => history[d] || 0);
   const max = Math.max(1, ...values);
   return (
     <div style={{
-      width: '90vw',
-      maxWidth: 700,
-      margin: '0 auto 28px auto',
-      height: 110,
+      width: compact ? '100%' : '90vw',
+      maxWidth: compact ? 'none' : 700,
+      margin: compact ? '0 auto 12px auto' : '0 auto 28px auto',
+      height: compact ? 90 : 110,
       background: 'var(--surface)',
       borderRadius: 'var(--radius)',
       boxShadow: '0 2px 12px #0002',
-      padding: '18px 18px 8px 18px',
+      padding: compact ? '12px 12px 6px 12px' : '18px 18px 8px 18px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       transition: 'background 0.2s',
     }}>
-      <svg width="100%" height="80" viewBox={`0 0 ${days.length * 16} 80`} style={{ display: 'block' }}>
+      <svg width="100%" height={compact ? 60 : 80} viewBox={`0 0 ${days.length * 16} ${compact ? 60 : 80}`} style={{ display: 'block' }}>
         {values.map((v, i) => (
           <g key={i}>
             <rect
               x={i * 16 + 2}
-              y={80 - (v / max) * 60}
+              y={(compact ? 60 : 80) - (v / max) * (compact ? 45 : 60)}
               width={12}
-              height={(v / max) * 60}
+              height={(v / max) * (compact ? 45 : 60)}
               fill="var(--secondary)"
               rx={4}
               style={{ transition: 'height 0.3s, y 0.3s' }}
@@ -775,7 +775,7 @@ function BarChart({ history, getLast30Days }: { history: { [date: string]: numbe
           </g>
         ))}
       </svg>
-      <div style={{ fontSize: 13, color: '#aaa', textAlign: 'center', marginTop: 2, letterSpacing: '0.2px' }}>
+      <div style={{ fontSize: compact ? 11 : 13, color: '#aaa', textAlign: 'center', marginTop: 2, letterSpacing: '0.2px' }}>
         Last 30 days
       </div>
     </div>
