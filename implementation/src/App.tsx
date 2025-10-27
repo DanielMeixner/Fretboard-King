@@ -41,7 +41,7 @@ const QUESTIONS_PER_ROUND = 15;
 const MAX_LEVEL = 15;
 
 // Note name conversion utilities
-// In German notation: B → H, B♭ (A#) → B
+// In German notation: B → H, A# (B-flat) → B
 function convertNoteToDisplay(usNote: string, naming: NoteNaming): string {
   if (naming === 'US') {
     return usNote;
