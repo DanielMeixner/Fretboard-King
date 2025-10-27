@@ -91,7 +91,7 @@ function getRandomQuiz(level: number = 15) {
   // String range is from minString to 5 (6th string is always index 5)
   const stringRange = 5 - constraints.minString + 1;
   const stringIdx = constraints.minString + getRandomInt(stringRange);
-  const fretIdx = 1 + getRandomInt(constraints.maxFret); // 1..maxFret (not including open string in quiz)
+  const fretIdx = getRandomInt(constraints.maxFret + 1); // 0..maxFret (including open string in quiz)
   const correctNote = getNoteName(STRINGS[stringIdx], fretIdx);
   // Pick 2 random incorrect notes
   let options = [correctNote];
@@ -484,7 +484,7 @@ function App() {
       <BarChart history={history} getLast30Days={getLast30Days} />
       <Fretboard
         highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
-        showStringNames={settings.showStringNames}
+        showStringNames={settings.showStringNames && !roundActive}
         fretboardColor={settings.fretboardColor}
       />
       
@@ -825,10 +825,10 @@ function Fretboard({ highlight, showStringNames = true, fretboardColor = '#222' 
                       border: '1px solid var(--border)',
                       width: fIdx === 0 ? 44 : 'auto',
                       height: 44,
-                      background: fIdx === 0
-                        ? 'var(--surface)'
-                        : isHighlight
-                          ? 'var(--primary)'
+                      background: isHighlight
+                        ? 'var(--primary)'
+                        : fIdx === 0
+                          ? 'var(--surface)'
                           : fretboardColor,
                       color: fIdx === 0 ? 'var(--on-primary)' : '#b0b0b0',
                       textAlign: 'center',
