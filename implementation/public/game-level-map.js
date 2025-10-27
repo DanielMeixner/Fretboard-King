@@ -12,16 +12,19 @@ class GameLevelMap extends HTMLElement {
       levels: 10,
       currentLevel: 1,
       completedLevels: [],
+      repetitionLevels: [],
       pathColor: '#8B4513',
       pathWidth: 8,
       markerSize: 40,
       spacing: 100,
       containerWidth: 800,
       containerHeight: 200,
+      theme: 'default',
       colors: {
         locked: '#cccccc',
         current: '#FFD700',
         completed: '#32CD32',
+        repetition: '#FF6B6B',
         path: '#8B4513'
       }
     };
@@ -36,7 +39,9 @@ class GameLevelMap extends HTMLElement {
       'marker-size',
       'spacing',
       'width',
-      'height'
+      'height',
+      'repetition-levels',
+      'theme'
     ];
   }
 
@@ -58,6 +63,9 @@ class GameLevelMap extends HTMLElement {
       case 'completed-levels':
         this._config.completedLevels = value ? value.split(',').map(n => parseInt(n.trim())) : [];
         break;
+      case 'repetition-levels':
+        this._config.repetitionLevels = value ? value.split(',').map(n => parseInt(n.trim())) : [];
+        break;
       case 'path-color':
         this._config.colors.path = value || '#8B4513';
         break;
@@ -72,6 +80,9 @@ class GameLevelMap extends HTMLElement {
         break;
       case 'height':
         this._config.containerHeight = parseInt(value) || 200;
+        break;
+      case 'theme':
+        this._config.theme = value || 'default';
         break;
     }
   }
@@ -127,37 +138,51 @@ class GameLevelMap extends HTMLElement {
   }
 
   getMarkerState(level) {
+    const isRepetition = this._config.repetitionLevels.includes(level);
+    
     if (this._config.completedLevels.includes(level)) {
-      return 'completed';
+      return isRepetition ? 'repetition-completed' : 'completed';
     } else if (level === this._config.currentLevel) {
-      return 'current';
+      return isRepetition ? 'repetition-current' : 'current';
     } else if (level < this._config.currentLevel) {
-      return 'completed';
+      return isRepetition ? 'repetition-completed' : 'completed';
     } else {
-      return 'locked';
+      return isRepetition ? 'repetition-locked' : 'locked';
     }
   }
 
   createMarker(point, state) {
     const { markerSize, colors } = this._config;
     const radius = markerSize / 2;
+    const isRepetition = state.includes('repetition');
+    const baseState = isRepetition ? state.replace('repetition-', '') : state;
+    const color = isRepetition ? colors.repetition : colors[baseState];
+    
+    // Add special icon for repetition levels
+    const repetitionIcon = isRepetition ? `
+      <text x="${point.x}" y="${point.y - radius - 12}" text-anchor="middle" 
+            font-size="18" fill="#FF6B6B">🔄</text>
+    ` : '';
     
     // Create comic-style marker with stroke
     const markerGroup = `
-      <g class="level-marker" data-level="${point.level}" data-state="${state}">
+      <g class="level-marker ${isRepetition ? 'repetition' : ''}" data-level="${point.level}" data-state="${state}">
         <!-- Outer glow for comic effect -->
         <circle cx="${point.x}" cy="${point.y}" r="${radius + 3}" 
-                fill="${colors[state]}" opacity="0.3" class="marker-glow"/>
+                fill="${color}" opacity="0.3" class="marker-glow"/>
         <!-- Main marker -->
         <circle cx="${point.x}" cy="${point.y}" r="${radius}" 
-                fill="${colors[state]}" stroke="#333" stroke-width="3" class="marker-body"/>
+                fill="${color}" stroke="#333" stroke-width="3" 
+                class="marker-body ${isRepetition ? 'repetition-marker' : ''}"/>
         <!-- Level number -->
         <text x="${point.x}" y="${point.y + 5}" text-anchor="middle" 
               class="level-text" fill="#333" font-weight="bold" font-size="${markerSize * 0.4}px">
           ${point.level}
         </text>
         <!-- Star for completed levels -->
-        ${state === 'completed' ? this.createStar(point.x, point.y - radius - 10) : ''}
+        ${baseState === 'completed' ? this.createStar(point.x, point.y - radius - 10) : ''}
+        <!-- Repetition icon -->
+        ${repetitionIcon}
       </g>
     `;
     
@@ -194,23 +219,27 @@ class GameLevelMap extends HTMLElement {
         :host {
           display: block;
           width: 100%;
-          max-width: ${actualWidth}px;
+          max-width: 100%;
           margin: 20px auto;
           font-family: 'Comic Sans MS', cursive, sans-serif;
         }
         
         .level-map-container {
           overflow-x: auto;
-          padding: 20px;
+          overflow-y: hidden;
+          padding: 30px 20px;
           background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
           border-radius: 15px;
           box-shadow: 0 8px 16px rgba(0,0,0,0.2);
           border: 3px solid #333;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
         }
         
         .level-map-svg {
           display: block;
           margin: 0 auto;
+          min-width: ${actualWidth}px;
         }
         
         .game-path {
@@ -223,11 +252,28 @@ class GameLevelMap extends HTMLElement {
         }
         
         .level-marker:hover {
-          transform: scale(1.1);
+          transform: scale(1.15);
+        }
+        
+        .level-marker.repetition .marker-body {
+          stroke: #FF6B6B;
+          stroke-width: 4;
+          stroke-dasharray: 5, 5;
+          animation: dash 1s linear infinite;
+        }
+        
+        @keyframes dash {
+          to {
+            stroke-dashoffset: -10;
+          }
         }
         
         .marker-body {
           filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .repetition-marker {
+          filter: drop-shadow(0 0 8px rgba(255, 107, 107, 0.5));
         }
         
         .level-text {
@@ -253,13 +299,32 @@ class GameLevelMap extends HTMLElement {
           50% { opacity: 0.6; }
         }
         
+        /* Custom scrollbar styling */
+        .level-map-container::-webkit-scrollbar {
+          height: 12px;
+        }
+        
+        .level-map-container::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 6px;
+        }
+        
+        .level-map-container::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.4);
+          border-radius: 6px;
+        }
+        
+        .level-map-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(0, 0, 0, 0.6);
+        }
+        
         /* Responsive design */
         @media (max-width: 768px) {
           :host {
             font-size: 14px;
           }
           .level-map-container {
-            padding: 10px;
+            padding: 20px 10px;
           }
         }
       </style>

@@ -21,13 +21,22 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         ? Array.from({ length: currentLevel }, (_, i) => i + 1).join(',')
         : '';
       
+      // Calculate repetition levels (every 4th level: 4, 8, 12, 16, 20, 24)
+      // This corresponds to 0-based levels 3, 7, 11, 15, 19, 23
+      const repetitionLevels = [];
+      for (let i = 4; i <= maxLevel + 1; i += 4) {
+        repetitionLevels.push(i);
+      }
+      
       // Create the web component element
       const levelMapElement = document.createElement('game-level-map');
       levelMapElement.setAttribute('levels', String(maxLevel + 1));
       levelMapElement.setAttribute('current-level', String(currentLevel + 1)); // Convert 0-based to 1-based
       levelMapElement.setAttribute('completed-levels', completedLevels);
+      levelMapElement.setAttribute('repetition-levels', repetitionLevels.join(','));
       levelMapElement.setAttribute('marker-size', '50');
       levelMapElement.setAttribute('spacing', '100');
+      levelMapElement.setAttribute('height', '250');
       
       // Append to container
       mapContainerRef.current.appendChild(levelMapElement);
@@ -82,7 +91,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
       </p>
 
       {/* Game Level Map Web Component Container */}
-      <div ref={mapContainerRef} style={{ width: '100%', overflow: 'auto' }} />
+      <div ref={mapContainerRef} style={{ width: '100%', overflow: 'visible' }} />
       
       {/* Info text */}
       <div
@@ -96,8 +105,11 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         <p style={{ margin: '8px 0' }}>
           Complete rounds with at least 12/15 correct answers to unlock the next level!
         </p>
-        <p style={{ margin: '8px 0', color: '#FFD700' }}>
-          🔄 After every 3rd level (3, 7, 11, 15...), there's a repetition level to test your knowledge!
+        <p style={{ margin: '8px 0', color: '#FF6B6B', fontWeight: 600 }}>
+          🔄 Repetition levels (marked with dashed borders) test your knowledge from previous levels!
+        </p>
+        <p style={{ margin: '8px 0', color: '#888', fontSize: 12 }}>
+          Tip: Scroll horizontally to see all levels
         </p>
       </div>
     </div>
