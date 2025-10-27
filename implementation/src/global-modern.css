@@ -6,6 +6,7 @@
   --error: #e53935;
   --background: #181a20;
   --surface: #23272f;
+  --surface-variant: #2d323b;
   --on-primary: #fff;
   --on-secondary: #fff;
   --on-surface: #e0e0e0;
@@ -22,6 +23,7 @@
   --error: #d32f2f;
   --background: #f5f7fa;
   --surface: #fff;
+  --surface-variant: #f0f2f5;
   --on-primary: #222;
   --on-secondary: #fff;
   --on-surface: #222;
