@@ -8,19 +8,23 @@ interface LevelMapProps {
 const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   
-  // Calculate completed levels (all levels below current)
-  const completedLevels = Array.from({ length: currentLevel }, (_, i) => i + 1).join(',');
-  
   useEffect(() => {
     // Create and mount the web component
     if (mapContainerRef.current) {
       // Clear any existing content
       mapContainerRef.current.innerHTML = '';
       
+      // Calculate completed levels: all levels from 1 to currentLevel (0-based to 1-based conversion)
+      // If currentLevel is 0, no levels are completed
+      // If currentLevel is 5, levels 1-5 are completed, and level 6 is current
+      const completedLevels = currentLevel > 0 
+        ? Array.from({ length: currentLevel }, (_, i) => i + 1).join(',')
+        : '';
+      
       // Create the web component element
       const levelMapElement = document.createElement('game-level-map');
       levelMapElement.setAttribute('levels', String(maxLevel + 1));
-      levelMapElement.setAttribute('current-level', String(currentLevel + 1));
+      levelMapElement.setAttribute('current-level', String(currentLevel + 1)); // Convert 0-based to 1-based
       levelMapElement.setAttribute('completed-levels', completedLevels);
       levelMapElement.setAttribute('marker-size', '50');
       levelMapElement.setAttribute('spacing', '100');
@@ -28,7 +32,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
       // Append to container
       mapContainerRef.current.appendChild(levelMapElement);
     }
-  }, [currentLevel, maxLevel, completedLevels]);
+  }, [currentLevel, maxLevel]);
 
   return (
     <div
