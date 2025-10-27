@@ -481,8 +481,10 @@ class GameLevelMap extends HTMLElement {
   }
 
   setSections(sections) {
-    this._config.sections = this.parseSections(JSON.stringify(sections));
-    this.setAttribute('sections', JSON.stringify(sections));
+    // If sections is already an array, parse it directly, otherwise stringify first
+    const parsedSections = Array.isArray(sections) ? this.parseSections(JSON.stringify(sections)) : this.parseSections(sections);
+    this._config.sections = parsedSections;
+    this.setAttribute('sections', typeof sections === 'string' ? sections : JSON.stringify(sections));
   }
 
   getSections() {
