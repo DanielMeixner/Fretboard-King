@@ -7,11 +7,14 @@ import { theme } from './theme';
 const SETTINGS_KEY = 'fbk_settings';
 const PLAYER_LEVEL_KEY = 'fbk_player_level';
 
+type NoteNaming = 'US' | 'German' | 'Mixed';
+
 type Settings = {
   showStringNames: boolean;
   fretboardColor: string;
   baseTimer: number; // Base timer in seconds (will be adjusted based on performance)
   adaptiveTiming: boolean; // Whether to adjust timing based on score
+  noteNaming: NoteNaming; // Note naming convention
 };
 
 function getDefaultSettings(): Settings {
@@ -20,6 +23,7 @@ function getDefaultSettings(): Settings {
     fretboardColor: '#222',
     baseTimer: 5,
     adaptiveTiming: true,
+    noteNaming: 'US',
   };
 }
 
@@ -35,6 +39,33 @@ const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const QUESTIONS_PER_ROUND = 15;
 const MAX_LEVEL = 15;
+
+// Note name conversion utilities
+// In German notation: B → H, B♭ (A#) → B
+function convertNoteToDisplay(usNote: string, naming: NoteNaming): string {
+  if (naming === 'US') {
+    return usNote;
+  }
+  
+  let germanNote = usNote;
+  if (usNote === 'B') {
+    germanNote = 'H';
+  } else if (usNote === 'A#') {
+    germanNote = 'B';
+  }
+  
+  if (naming === 'German') {
+    return germanNote;
+  }
+  
+  // Mixed mode: show both
+  if (usNote === 'B') {
+    return 'H/B';
+  } else if (usNote === 'A#') {
+    return 'B/A#';
+  }
+  return usNote;
+}
 
 // Level progression: determines which strings and frets are available at each level
 // Note: String indices follow guitar numbering (0 = 1st string/high E, 5 = 6th string/low E)
@@ -164,6 +195,10 @@ function App() {
   }
   function handleAdaptiveTimingToggle() {
     setSettings((s) => ({ ...s, adaptiveTiming: !s.adaptiveTiming }));
+  }
+  
+  function handleNoteNamingChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setSettings((s) => ({ ...s, noteNaming: e.target.value as NoteNaming }));
   }
   
   function handleResetLevel() {
@@ -358,7 +393,7 @@ function App() {
       setRoundScore((s) => s + 1);
       setFeedback('✅ Correct!');
     } else {
-      setFeedback(`❌ Wrong! The correct answer was: ${quiz.correctNote}`);
+      setFeedback(`❌ Wrong! The correct answer was: ${convertNoteToDisplay(quiz.correctNote, settings.noteNaming)}`);
     }
     
     setTimeout(() => {
@@ -375,7 +410,7 @@ function App() {
         setTimer(getCalculatedTimer());
       }
     }, 1200);
-  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer, playerLevel]);
+  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer, playerLevel, settings.noteNaming]);
 
   // Get last 30 days for chart
   function getLast30Days() {
@@ -495,6 +530,7 @@ function App() {
         highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
         showStringNames={settings.showStringNames && !roundActive}
         fretboardColor={settings.fretboardColor}
+        noteNaming={settings.noteNaming}
       />
       
       {/* Round Controls */}
@@ -585,7 +621,7 @@ function App() {
                     transition: 'background 0.2s, box-shadow 0.2s',
                   }}
                 >
-                  {opt}
+                  {convertNoteToDisplay(opt, settings.noteNaming)}
                 </button>
               ))}
             </div>
@@ -716,6 +752,27 @@ function App() {
                 />
                 Adaptive timing (adjust based on performance)
               </label>
+              <label style={{ display: 'block', marginBottom: 14, fontSize: 16 }}>
+                Note naming:
+                <select
+                  value={settings.noteNaming}
+                  onChange={handleNoteNamingChange}
+                  style={{
+                    marginLeft: 10,
+                    padding: '4px 8px',
+                    fontSize: 16,
+                    background: 'var(--surface)',
+                    color: 'var(--on-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="US">US (A, A#, B)</option>
+                  <option value="German">German (A, B, H)</option>
+                  <option value="Mixed">Mixed (A, B/A#, H/B)</option>
+                </select>
+              </label>
               <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
                 <h4 style={{ margin: '0 0 10px 0', fontSize: 16, color: 'var(--on-surface)' }}>Level Progress</h4>
                 <p style={{ fontSize: 14, color: '#888', margin: '0 0 10px 0' }}>
@@ -793,10 +850,11 @@ function BarChart({ history, getLast30Days, compact = false }: { history: { [dat
 }
 
 
-function Fretboard({ highlight, showStringNames = true, fretboardColor = '#222' }: {
+function Fretboard({ highlight, showStringNames = true, fretboardColor = '#222', noteNaming = 'US' }: {
   highlight?: { stringIdx: number; fretIdx: number };
   showStringNames?: boolean;
   fretboardColor?: string;
+  noteNaming?: NoteNaming;
 }) {
   // For each marked fret, render a dot only once, centered vertically
   const markerFrets = [3, 5, 7, 9, 12];
@@ -848,7 +906,7 @@ function Fretboard({ highlight, showStringNames = true, fretboardColor = '#222' 
                       transition: 'background 0.2s',
                     }}
                   >
-                    {fIdx === 0 && showStringNames ? string : ''}
+                    {fIdx === 0 && showStringNames ? convertNoteToDisplay(string, noteNaming) : ''}
                   </td>
                 );
               })}
