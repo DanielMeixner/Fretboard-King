@@ -516,27 +516,6 @@ function App() {
         )}
         <span style={{ color: '#888', fontSize: 16 }}>Yesterday: {yesterdayScore}</span>
       </div>
-      <div style={{
-        textAlign: 'center',
-        fontSize: 14,
-        color: '#888',
-        marginBottom: theme.spacing(1),
-      }}>
-        {(() => {
-          const constraints = getLevelConstraints(playerLevel);
-          const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
-          const fretCount = constraints.maxFret + 1; // Including open string for display
-          return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel(playerLevel)}/${QUESTIONS_PER_ROUND} to level up)`;
-        })()}
-      </div>
-      <BarChart history={history} getLast30Days={getLast30Days} />
-      <Fretboard
-        highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
-        showStringNames={settings.showStringNames && !roundActive}
-        fretboardColor={settings.fretboardColor}
-        noteNaming={settings.noteNaming}
-      />
-      
       {/* Play Tab Content */}
       {activeTab === 'play' && (
         <>
@@ -556,8 +535,9 @@ function App() {
           <BarChart history={history} getLast30Days={getLast30Days} />
           <Fretboard
             highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
-            showStringNames={settings.showStringNames}
+            showStringNames={settings.showStringNames && !roundActive}
             fretboardColor={settings.fretboardColor}
+            noteNaming={settings.noteNaming}
           />
           
           {/* Round Controls */}
