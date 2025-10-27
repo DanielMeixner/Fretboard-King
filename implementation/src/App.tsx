@@ -26,6 +26,8 @@ function getDefaultSettings(): Settings {
 import ColorModeToggle from './components/ColorModeToggle';
 import { useContext } from 'react';
 import { ColorModeContext } from './components/ColorModeContext';
+import Tabs from './components/Tabs';
+import LevelMap from './components/LevelMap';
 import './App.css';
 import logo from './logo.svg';
 
@@ -142,6 +144,9 @@ function App() {
       return 0;
     }
   });
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<string>('play');
   
   // Persist settings
   React.useEffect(() => {
@@ -468,71 +473,85 @@ function App() {
         )}
         <span style={{ color: '#888', fontSize: 16 }}>Yesterday: {yesterdayScore}</span>
       </div>
-      <div style={{
-        textAlign: 'center',
-        fontSize: 14,
-        color: '#888',
-        marginBottom: theme.spacing(1),
-      }}>
-        {(() => {
-          const constraints = getLevelConstraints(playerLevel);
-          const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
-          const fretCount = constraints.maxFret + 1; // Including open string for display
-          return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel(playerLevel)}/${QUESTIONS_PER_ROUND} to level up)`;
-        })()}
-      </div>
-      <BarChart history={history} getLast30Days={getLast30Days} />
-      <Fretboard
-        highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
-        showStringNames={settings.showStringNames}
-        fretboardColor={settings.fretboardColor}
+      
+      {/* Tabs */}
+      <Tabs 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tabs={[
+          { id: 'play', label: 'Play', icon: '🎸' },
+          { id: 'map', label: 'Level Map', icon: '🗺️' }
+        ]}
       />
       
-      {/* Round Controls */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: 16,
-        margin: `${theme.spacing(2)} 0`,
-      }}>
-        {!roundActive ? (
-          <button
-            onClick={startRound}
-            style={{
-              padding: '12px 24px',
-              fontSize: 18,
-              background: 'var(--primary)',
-              color: 'var(--on-primary)',
-              border: 'none',
-              borderRadius: 'var(--radius)',
-              cursor: 'pointer',
-              fontWeight: 600,
-              boxShadow: 'var(--shadow)',
-              transition: 'background 0.2s',
-            }}
-            onMouseOver={e => (e.currentTarget.style.background = 'var(--secondary)')}
-            onMouseOut={e => (e.currentTarget.style.background = 'var(--primary)')}
-          >
-            🎯 Start Round (15 questions)
-          </button>
-        ) : (
-          <button
-            onClick={stopRound}
-            style={{
-              padding: '12px 24px',
-              fontSize: 18,
-              background: 'var(--error)',
-              color: 'var(--on-primary)',
-              border: 'none',
-              borderRadius: 'var(--radius)',
-              cursor: 'pointer',
-              fontWeight: 600,
-              boxShadow: 'var(--shadow)',
-              transition: 'background 0.2s',
-            }}
-          >
-            🛑 Stop Round
-          </button>
+      {/* Play Tab Content */}
+      {activeTab === 'play' && (
+        <>
+          <div style={{
+            textAlign: 'center',
+            fontSize: 14,
+            color: '#888',
+            marginBottom: theme.spacing(1),
+          }}>
+            {(() => {
+              const constraints = getLevelConstraints(playerLevel);
+              const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
+              const fretCount = constraints.maxFret + 1; // Including open string for display
+              return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel(playerLevel)}/${QUESTIONS_PER_ROUND} to level up)`;
+            })()}
+          </div>
+          <BarChart history={history} getLast30Days={getLast30Days} />
+          <Fretboard
+            highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
+            showStringNames={settings.showStringNames}
+            fretboardColor={settings.fretboardColor}
+          />
+          
+          {/* Round Controls */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 16,
+            margin: `${theme.spacing(2)} 0`,
+          }}>
+            {!roundActive ? (
+              <button
+                onClick={startRound}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: 18,
+                  background: 'var(--primary)',
+                  color: 'var(--on-primary)',
+                  border: 'none',
+                  borderRadius: 'var(--radius)',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  boxShadow: 'var(--shadow)',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = 'var(--secondary)')}
+                onMouseOut={e => (e.currentTarget.style.background = 'var(--primary)')}
+              >
+                🎯 Start Round (15 questions)
+              </button>
+            ) : (
+              <button
+                onClick={stopRound}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: 18,
+                  background: 'var(--error)',
+                  color: 'var(--on-primary)',
+                  border: 'none',
+                  borderRadius: 'var(--radius)',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  boxShadow: 'var(--shadow)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                🛑 Stop Round
+              </button>
         )}
       </div>
 
@@ -605,6 +624,24 @@ function App() {
           }}>{feedback}</div>
         )}
       </main>
+        </>
+      )}
+      
+      {/* Level Map Tab Content */}
+      {activeTab === 'map' && (
+        <div style={{ 
+          padding: `${theme.spacing(4)} ${theme.spacing(2)}`,
+          minHeight: '60vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <LevelMap 
+            currentLevel={playerLevel} 
+            maxLevel={MAX_LEVEL}
+          />
+        </div>
+      )}
 
       {/* Settings Modal */}
       {settingsOpen && (
