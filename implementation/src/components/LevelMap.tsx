@@ -97,7 +97,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
           Complete rounds with at least 12/15 correct answers to unlock the next level!
         </p>
         <p style={{ margin: '8px 0', color: '#FFD700' }}>
-          🔄 Every 4th level (3, 7, 11, 15...) is a repetition level to test your knowledge!
+          🔄 After every 3rd level (3, 7, 11, 15...), there's a repetition level to test your knowledge!
         </p>
       </div>
     </div>

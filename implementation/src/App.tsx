@@ -114,9 +114,13 @@ function getLevelConstraints(level: number): { minString: number; maxFret: numbe
   if (isRepetitionLevel(level)) {
     const range = getRepetitionLevelRange(level);
     // Get constraints for all levels in the range and combine them
+    // Note: By design, the range will only include regular levels, not other repetition levels
     const constraints = [];
     for (let i = range.start; i <= range.end; i++) {
-      constraints.push(getLevelConstraints(i));
+      // Skip if somehow a repetition level is in the range (should not happen by design)
+      if (!isRepetitionLevel(i)) {
+        constraints.push(getLevelConstraints(i));
+      }
     }
     // Use the most permissive constraints (lowest minString, highest maxFret)
     const minString = Math.min(...constraints.map(c => c.minString));
