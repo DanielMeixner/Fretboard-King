@@ -28,12 +28,24 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         repetitionLevels.push(i);
       }
       
+      // Define sections for level grouping
+      // Each section contains 3 regular levels + 1 repetition level
+      const sections = [
+        { name: 'Foundation', levels: '1-4', color: '#B3E5FC' },      // Light Blue
+        { name: 'Elementary', levels: '5-8', color: '#C8E6C9' },      // Light Green
+        { name: 'Intermediate', levels: '9-12', color: '#FFF9C4' },   // Light Yellow
+        { name: 'Advanced', levels: '13-16', color: '#FFCCBC' },      // Light Orange
+        { name: 'Expert', levels: '17-20', color: '#F8BBD0' },        // Light Pink
+        { name: 'Master', levels: '21-25', color: '#E1BEE7' },        // Light Purple
+      ];
+      
       // Create the web component element
       const levelMapElement = document.createElement('game-level-map');
       levelMapElement.setAttribute('levels', String(maxLevel + 1));
       levelMapElement.setAttribute('current-level', String(currentLevel + 1)); // Convert 0-based to 1-based
       levelMapElement.setAttribute('completed-levels', completedLevels);
       levelMapElement.setAttribute('repetition-levels', repetitionLevels.join(','));
+      levelMapElement.setAttribute('sections', JSON.stringify(sections));
       levelMapElement.setAttribute('marker-size', '50');
       levelMapElement.setAttribute('spacing', '100');
       levelMapElement.setAttribute('height', '250');
