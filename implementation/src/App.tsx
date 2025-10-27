@@ -40,7 +40,7 @@ const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning: index 0 = 1s
 const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const QUESTIONS_PER_ROUND = 15;
-const MAX_LEVEL = 15;
+const MAX_LEVEL = 24; // Extended to accommodate repetition levels
 
 // Note name conversion utilities
 // In German notation: B → H, A# (B-flat) → B
@@ -69,39 +69,85 @@ function convertNoteToDisplay(usNote: string, naming: NoteNaming): string {
   return usNote;
 }
 
+// Helper function to check if a level is a repetition level
+// Repetition levels occur after every 3rd level: levels 3, 7, 11, 15, 19, 23...
+function isRepetitionLevel(level: number): boolean {
+  return level > 0 && (level + 1) % 4 === 0;
+}
+
+// Helper function to get the range of levels that a repetition level covers
+// For example, level 3 covers levels 0-2, level 7 covers levels 4-6
+function getRepetitionLevelRange(level: number): { start: number; end: number } {
+  if (!isRepetitionLevel(level)) {
+    return { start: level, end: level };
+  }
+  const end = level - 1;
+  const start = Math.max(0, end - 2);
+  return { start, end };
+}
+
+// Map effective level (accounting for repetition levels) to actual progression level
+// This ensures that repetition levels don't affect the actual progression
+function getProgressionLevel(level: number): number {
+  // Count how many repetition levels exist before this level
+  const repetitionLevelsBefore = Math.floor(level / 4);
+  return level - repetitionLevelsBefore;
+}
+
 // Level progression: determines which strings and frets are available at each level
 // Note: String indices follow guitar numbering (0 = 1st string/high E, 5 = 6th string/low E)
 // Display: 1st string (high E) shown at TOP (standard TAB notation)
 // Progression: Start with LOW strings (6th string/low E) and progress to HIGH strings
+// 
+// Regular levels progress through increasing difficulty:
 // Level 0: String 5 (6th string, low E), frets 0-2
 // Level 1: Strings 4-5 (5th-6th strings: A, low E), frets 0-2
 // Level 2: Strings 4-5, frets 0-3
-// Level 3: Strings 4-5, frets 0-4
-// Level 4: Strings 3-5 (4th-6th strings: D, A, low E), frets 0-4
-// ... and so on up to level MAX_LEVEL-1
-// Level MAX_LEVEL+: All strings and frets unlocked
+// Level 3: REPETITION - tests levels 0-2
+// Level 4: Strings 4-5, frets 0-4
+// Level 5: Strings 3-5, frets 0-4
+// Level 6: Strings 3-5, frets 0-5
+// Level 7: REPETITION - tests levels 4-6
+// ... and so on
 function getLevelConstraints(level: number): { minString: number; maxFret: number } {
-  if (level === 0) return { minString: 5, maxFret: 2 }; // 6th string (low E), first 3 frets (0-2)
-  if (level === 1) return { minString: 4, maxFret: 2 }; // 5th-6th strings (A, E), first 3 frets
-  if (level === 2) return { minString: 4, maxFret: 3 }; // 5th-6th strings, 4 frets
-  if (level === 3) return { minString: 4, maxFret: 4 }; // 5th-6th strings, 5 frets
-  if (level === 4) return { minString: 3, maxFret: 4 }; // 4th-6th strings (D, A, E), 5 frets
-  if (level === 5) return { minString: 3, maxFret: 5 }; // 4th-6th strings, 6 frets
-  if (level === 6) return { minString: 2, maxFret: 5 }; // 3rd-6th strings (G, D, A, E), 6 frets
-  if (level === 7) return { minString: 2, maxFret: 6 }; // 3rd-6th strings, 7 frets
-  if (level === 8) return { minString: 1, maxFret: 6 }; // 2nd-6th strings (B, G, D, A, E), 7 frets
-  if (level === 9) return { minString: 1, maxFret: 7 }; // 2nd-6th strings, 8 frets
-  if (level === 10) return { minString: 0, maxFret: 7 }; // All strings, 8 frets
-  if (level === 11) return { minString: 0, maxFret: 8 }; // All strings, 9 frets
-  if (level === 12) return { minString: 0, maxFret: 9 }; // All strings, 10 frets
-  if (level === 13) return { minString: 0, maxFret: 10 }; // All strings, 11 frets
-  if (level === 14) return { minString: 0, maxFret: 11 }; // All strings, 12 frets
+  // Handle repetition levels - they test the previous 3 levels
+  if (isRepetitionLevel(level)) {
+    const range = getRepetitionLevelRange(level);
+    // Get constraints for all levels in the range and combine them
+    const constraints = [];
+    for (let i = range.start; i <= range.end; i++) {
+      constraints.push(getLevelConstraints(i));
+    }
+    // Use the most permissive constraints (lowest minString, highest maxFret)
+    const minString = Math.min(...constraints.map(c => c.minString));
+    const maxFret = Math.max(...constraints.map(c => c.maxFret));
+    return { minString, maxFret };
+  }
+  
+  // For regular levels, use progression level to determine constraints
+  const progLevel = getProgressionLevel(level);
+  
+  if (progLevel === 0) return { minString: 5, maxFret: 2 }; // 6th string (low E), first 3 frets (0-2)
+  if (progLevel === 1) return { minString: 4, maxFret: 2 }; // 5th-6th strings (A, E), first 3 frets
+  if (progLevel === 2) return { minString: 4, maxFret: 3 }; // 5th-6th strings, 4 frets
+  if (progLevel === 3) return { minString: 4, maxFret: 4 }; // 5th-6th strings, 5 frets
+  if (progLevel === 4) return { minString: 3, maxFret: 4 }; // 4th-6th strings (D, A, E), 5 frets
+  if (progLevel === 5) return { minString: 3, maxFret: 5 }; // 4th-6th strings, 6 frets
+  if (progLevel === 6) return { minString: 2, maxFret: 5 }; // 3rd-6th strings (G, D, A, E), 6 frets
+  if (progLevel === 7) return { minString: 2, maxFret: 6 }; // 3rd-6th strings, 7 frets
+  if (progLevel === 8) return { minString: 1, maxFret: 6 }; // 2nd-6th strings (B, G, D, A, E), 7 frets
+  if (progLevel === 9) return { minString: 1, maxFret: 7 }; // 2nd-6th strings, 8 frets
+  if (progLevel === 10) return { minString: 0, maxFret: 7 }; // All strings, 8 frets
+  if (progLevel === 11) return { minString: 0, maxFret: 8 }; // All strings, 9 frets
+  if (progLevel === 12) return { minString: 0, maxFret: 9 }; // All strings, 10 frets
+  if (progLevel === 13) return { minString: 0, maxFret: 10 }; // All strings, 11 frets
+  if (progLevel === 14) return { minString: 0, maxFret: 11 }; // All strings, 12 frets
   // Level MAX_LEVEL+: All strings and frets
   return { minString: 0, maxFret: FRETS - 1 };
 }
 
 // Calculate required score to pass a level (percentage-based on round)
-function getRequiredScoreForLevel(_level: number): number {
+function getRequiredScoreForLevel(): number {
   // Require 80% correct answers in a round to pass
   return Math.ceil(QUESTIONS_PER_ROUND * 0.8); // 12 out of 15
 }
@@ -298,7 +344,7 @@ function App() {
 
   const endRound = React.useCallback(() => {
     setRoundActive(false);
-    const requiredScore = getRequiredScoreForLevel(playerLevel);
+    const requiredScore = getRequiredScoreForLevel();
     const passed = roundScore >= requiredScore;
     
     if (passed && playerLevel < MAX_LEVEL) {
@@ -521,7 +567,10 @@ function App() {
         fontSize: 20,
         color: 'var(--on-surface)',
       }}>
-        <span>Level: <b style={{ color: 'var(--primary)' }}>{playerLevel}</b></span>
+        <span>
+          Level: <b style={{ color: 'var(--primary)' }}>{playerLevel}</b>
+          {isRepetitionLevel(playerLevel) && <span style={{ color: '#FFD700', fontSize: 16, marginLeft: 4 }}>🔄 Repetition</span>}
+        </span>
         <span>Total Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
         {roundActive && (
           <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
@@ -541,7 +590,11 @@ function App() {
               const constraints = getLevelConstraints(playerLevel);
               const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
               const fretCount = constraints.maxFret + 1; // Including open string for display
-              return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel(playerLevel)}/${QUESTIONS_PER_ROUND} to level up)`;
+              if (isRepetitionLevel(playerLevel)) {
+                const range = getRepetitionLevelRange(playerLevel);
+                return `🔄 Repetition Level - Testing knowledge from levels ${range.start}-${range.end} | ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
+              }
+              return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
             })()}
           </div>
           <BarChart history={history} getLast30Days={getLast30Days} />
