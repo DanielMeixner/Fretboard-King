@@ -209,7 +209,16 @@ function App() {
       return {};
     }
   });
-  const [quiz, setQuiz] = useState(getRandomQuiz(0)); // Start with level 0 constraints
+  const [quiz, setQuiz] = useState(() => {
+    // Load stored player level to initialize quiz at correct difficulty
+    try {
+      const stored = localStorage.getItem(PLAYER_LEVEL_KEY);
+      const level = stored ? parseInt(stored, 10) : 0;
+      return getRandomQuiz(level);
+    } catch {
+      return getRandomQuiz(0);
+    }
+  });
   const [selected, setSelected] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(5);
