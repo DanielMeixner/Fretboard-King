@@ -30,7 +30,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         style={{
           marginTop: 0,
           marginBottom: 8,
-          color: 'var(--on-primary)',
+          color: 'var(--on-surface)',
           fontWeight: 600,
           fontSize: 28,
           textAlign: 'center',
