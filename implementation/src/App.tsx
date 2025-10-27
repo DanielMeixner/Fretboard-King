@@ -538,13 +538,13 @@ function App() {
       <header style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
-        padding: `${theme.spacing(4)} 0 ${theme.spacing(2)} 0`,
+        gap: 12,
+        padding: `${theme.spacing(2)} 0 ${theme.spacing(1)} 0`,
         justifyContent: 'center',
       }}>
-        <img src={logo} alt="Fretboard-King logo" style={{ width: 48, height: 48, borderRadius: 12, boxShadow: '0 2px 8px #0004' }} />
+        <img src={logo} alt="Fretboard-King logo" style={{ width: 32, height: 32, borderRadius: 8, boxShadow: '0 2px 8px #0004' }} />
         <h1 style={{
-          fontSize: 36,
+          fontSize: 24,
           fontWeight: theme.font.headingWeight,
           margin: 0,
           color: 'var(--on-primary)',
@@ -566,27 +566,27 @@ function App() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 32,
-        marginBottom: theme.spacing(2),
-        fontSize: 20,
+        gap: 20,
+        marginBottom: theme.spacing(1),
+        fontSize: 14,
         color: 'var(--on-surface)',
       }}>
         <span>
           Level: <b style={{ color: 'var(--primary)' }}>{playerLevel}</b>
-          {isRepetitionLevel(playerLevel) && <span style={{ color: '#FFD700', fontSize: 16, marginLeft: 4 }}>🔄 Repetition</span>}
+          {isRepetitionLevel(playerLevel) && <span style={{ color: '#FFD700', fontSize: 12, marginLeft: 4 }}>🔄 Repetition</span>}
         </span>
         <span>Total Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
         {roundActive && (
           <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
         )}
-        <span style={{ color: '#888', fontSize: 16 }}>Yesterday: {yesterdayScore}</span>
+        <span style={{ color: '#888', fontSize: 12 }}>Yesterday: {yesterdayScore}</span>
       </div>
       {/* Play Tab Content */}
       {activeTab === 'play' && (
         <>
           <div style={{
             textAlign: 'center',
-            fontSize: 14,
+            fontSize: 12,
             color: '#888',
             marginBottom: theme.spacing(1),
           }}>
@@ -601,7 +601,6 @@ function App() {
               return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
             })()}
           </div>
-          <BarChart history={history} getLast30Days={getLast30Days} />
           <Fretboard
             highlight={{ stringIdx: quiz.stringIdx, fretIdx: quiz.fretIdx }}
             showStringNames={settings.showStringNames && !roundActive}
