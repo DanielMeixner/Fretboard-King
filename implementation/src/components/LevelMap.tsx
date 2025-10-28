@@ -121,7 +121,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
           Complete rounds with at least 12/15 correct answers to unlock the next level!
         </p>
         <p style={{ margin: '8px 0', color: '#FF6B6B', fontWeight: 600 }}>
-          🔄 Repetition levels (every 3rd level, marked with dashed borders) test your knowledge from previous levels!
+          🔄 Repetition levels (every 3rd level, marked with dashed borders) test the previous 2 levels!
         </p>
         <p style={{ margin: '8px 0', color: '#888', fontSize: 12 }}>
           Tip: Scroll horizontally to see all levels

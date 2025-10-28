@@ -103,11 +103,11 @@ function getProgressionLevel(level: number): number {
 // Level 0: String 5 (6th string, low E), frets 0-1 (2 notes: E, F)
 // Level 1: String 5, frets 0-2 (adds 1 note: F#)
 // Level 2: REPETITION - tests levels 0-1
-// Level 3: Strings 4-5, frets 0-2 (adds 3 notes: A, A#, B)
-// Level 4: Strings 4-5, frets 0-3 (adds 2 notes: C, G)
+// Level 3: Strings 4-5, frets 0-2 (adds new string with 3 notes: A, A#, B)
+// Level 4: Strings 4-5, frets 0-3 (adds 1 fret: C on string 5, G on string 4)
 // Level 5: REPETITION - tests levels 3-4
-// Level 6: Strings 4-5, frets 0-4 (adds 2 notes: C#, G#)
-// Level 7: Strings 3-5, frets 0-4 (adds 2 notes: D, D#)
+// Level 6: Strings 4-5, frets 0-4 (adds 1 fret: C# on string 5, G# on string 4)
+// Level 7: Strings 3-5, frets 0-4 (adds new string with 2 notes: D, D#)
 // Level 8: REPETITION - tests levels 6-7
 // ... and so on with repetitions every 3rd level
 function getLevelConstraints(level: number): { minString: number; maxFret: number } {
