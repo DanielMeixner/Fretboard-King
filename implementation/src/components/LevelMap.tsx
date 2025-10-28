@@ -21,22 +21,25 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         ? Array.from({ length: currentLevel }, (_, i) => i + 1).join(',')
         : '';
       
-      // Calculate repetition levels (every 4th level: 4, 8, 12, 16, 20, 24)
-      // This corresponds to 0-based levels 3, 7, 11, 15, 19, 23
+      // Calculate repetition levels (every 3rd level: 3, 6, 9, 12, 15, 18, 21, 24, 27)
+      // This corresponds to 0-based levels 2, 5, 8, 11, 14, 17, 20, 23, 26
       const repetitionLevels = [];
-      for (let i = 4; i <= maxLevel + 1; i += 4) {
+      for (let i = 3; i <= maxLevel + 1; i += 3) {
         repetitionLevels.push(i);
       }
       
       // Define sections for level grouping
-      // Each section contains 3 regular levels + 1 repetition level
+      // Each section contains 2 regular levels + 1 repetition level (3 total)
       const sections = [
-        { name: 'Foundation', levels: '1-4', color: '#B3E5FC' },      // Light Blue
-        { name: 'Elementary', levels: '5-8', color: '#C8E6C9' },      // Light Green
-        { name: 'Intermediate', levels: '9-12', color: '#FFF9C4' },   // Light Yellow
-        { name: 'Advanced', levels: '13-16', color: '#FFCCBC' },      // Light Orange
-        { name: 'Expert', levels: '17-20', color: '#F8BBD0' },        // Light Pink
-        { name: 'Master', levels: '21-25', color: '#E1BEE7' },        // Light Purple
+        { name: 'Foundation', levels: '1-3', color: '#B3E5FC' },      // Light Blue
+        { name: 'Elementary', levels: '4-6', color: '#C8E6C9' },      // Light Green
+        { name: 'Intermediate', levels: '7-9', color: '#FFF9C4' },    // Light Yellow
+        { name: 'Advanced', levels: '10-12', color: '#FFCCBC' },      // Light Orange
+        { name: 'Expert', levels: '13-15', color: '#F8BBD0' },        // Light Pink
+        { name: 'Master I', levels: '16-18', color: '#E1BEE7' },      // Light Purple
+        { name: 'Master II', levels: '19-21', color: '#D1C4E9' },     // Light Indigo
+        { name: 'Master III', levels: '22-24', color: '#C5CAE9' },    // Light Blue-Grey
+        { name: 'Grand Master', levels: '25-27', color: '#B2DFDB' },  // Light Teal
       ];
       
       // Create the web component element
@@ -118,7 +121,7 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
           Complete rounds with at least 12/15 correct answers to unlock the next level!
         </p>
         <p style={{ margin: '8px 0', color: '#FF6B6B', fontWeight: 600 }}>
-          🔄 Repetition levels (marked with dashed borders) test your knowledge from previous levels!
+          🔄 Repetition levels (every 3rd level, marked with dashed borders) test your knowledge from previous levels!
         </p>
         <p style={{ margin: '8px 0', color: '#888', fontSize: 12 }}>
           Tip: Scroll horizontally to see all levels
