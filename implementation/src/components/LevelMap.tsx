@@ -3,9 +3,10 @@ import React, { useEffect, useRef } from 'react';
 interface LevelMapProps {
   currentLevel: number;
   maxLevel: number;
+  onLevelClick?: (level: number) => void;
 }
 
-const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
+const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel, onLevelClick }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -55,8 +56,24 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
       
       // Append to container
       mapContainerRef.current.appendChild(levelMapElement);
+      
+      // Add event listener for level clicks
+      const handleLevelClick = (event: CustomEvent) => {
+        const { level } = event.detail;
+        // Convert from 1-based (web component) to 0-based (React app)
+        if (onLevelClick) {
+          onLevelClick(level - 1);
+        }
+      };
+      
+      levelMapElement.addEventListener('level-click', handleLevelClick as EventListener);
+      
+      // Cleanup
+      return () => {
+        levelMapElement.removeEventListener('level-click', handleLevelClick as EventListener);
+      };
     }
-  }, [currentLevel, maxLevel]);
+  }, [currentLevel, maxLevel, onLevelClick]);
 
   return (
     <div
@@ -122,6 +139,9 @@ const LevelMap: React.FC<LevelMapProps> = ({ currentLevel, maxLevel }) => {
         </p>
         <p style={{ margin: '8px 0', color: '#FF6B6B', fontWeight: 600 }}>
           🔄 Repetition levels (every 3rd level, marked with dashed borders) test the previous 2 levels!
+        </p>
+        <p style={{ margin: '8px 0', color: 'var(--primary)', fontWeight: 600 }}>
+          💡 Click any level to practice it again!
         </p>
         <p style={{ margin: '8px 0', color: '#888', fontSize: 12 }}>
           Tip: Scroll horizontally to see all levels

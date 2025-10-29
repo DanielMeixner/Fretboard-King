@@ -318,6 +318,7 @@ function App() {
   const [roundActive, setRoundActive] = useState(false);
   const [questionsInRound, setQuestionsInRound] = useState(0);
   const [roundScore, setRoundScore] = useState(0);
+  const [practicingLevel, setPracticingLevel] = useState<number>(playerLevel);
 
   // Calculate dynamic timer based on score and settings
   const getCalculatedTimer = React.useCallback((): number => {
@@ -337,11 +338,15 @@ function App() {
   }, [settings.adaptiveTiming, settings.baseTimer, roundActive, roundScore, questionsInRound, score]);
 
   // Round management functions
-  const startRound = React.useCallback(() => {
+  const startRound = React.useCallback((level?: number) => {
     setRoundActive(true);
     setQuestionsInRound(0);
     setRoundScore(0);
-    setQuiz(getRandomQuiz(playerLevel));
+    // If a specific level is provided, use it; otherwise use current player level
+    const levelToUse = level !== undefined ? level : playerLevel;
+    setQuiz(getRandomQuiz(levelToUse));
+    // Store the level being practiced for use in the round
+    setPracticingLevel(levelToUse);
     // Timer will be set by the next useEffect once roundActive is true
     setSelected(null);
     setFeedback(null);
@@ -372,6 +377,16 @@ function App() {
     setFeedback('Round stopped');
     setTimeout(() => setFeedback(null), 2000);
   }, []);
+
+  // Handle level click from level map
+  const handleLevelClick = React.useCallback((level: number) => {
+    // Switch to play tab and start a round at the selected level
+    setActiveTab('play');
+    // Small delay to allow tab switch to complete
+    setTimeout(() => {
+      startRound(level);
+    }, 100);
+  }, [startRound]);
 
   // On mount, check if date changed and reset scores if needed
   React.useEffect(() => {
@@ -423,7 +438,7 @@ function App() {
           endRound();
         } else {
           setQuestionsInRound(nextQuestionNum);
-          setQuiz(getRandomQuiz(playerLevel));
+          setQuiz(getRandomQuiz(practicingLevel));
           setTimer(getCalculatedTimer());
         }
       }, 1200);
@@ -431,7 +446,7 @@ function App() {
     }
     const t = setTimeout(() => setTimer(timer - 1), 1000);
     return () => clearTimeout(t);
-  }, [timer, selected, roundActive, questionsInRound, endRound, getCalculatedTimer, playerLevel]);
+  }, [timer, selected, roundActive, questionsInRound, endRound, getCalculatedTimer, practicingLevel]);
 
   // Set initial timer when round starts
   React.useEffect(() => {
@@ -462,11 +477,11 @@ function App() {
         endRound();
       } else {
         setQuestionsInRound(nextQuestionNum);
-        setQuiz(getRandomQuiz(playerLevel));
+        setQuiz(getRandomQuiz(practicingLevel));
         setTimer(getCalculatedTimer());
       }
     }, 1200);
-  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer, playerLevel, settings.noteNaming]);
+  }, [selected, roundActive, quiz.correctNote, questionsInRound, QUESTIONS_PER_ROUND, endRound, getCalculatedTimer, practicingLevel, settings.noteNaming]);
 
   // Get last 30 days for chart
   function getLast30Days() {
@@ -578,7 +593,12 @@ function App() {
         </span>
         <span>Total Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
         {roundActive && (
-          <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
+          <>
+            <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
+            {practicingLevel !== playerLevel && (
+              <span style={{ color: '#FFD700', fontSize: 14 }}>🎯 Practicing Level {practicingLevel}</span>
+            )}
+          </>
         )}
         <span style={{ color: '#888', fontSize: 14 }}>Yesterday: {yesterdayScore}</span>
       </div>
@@ -592,14 +612,15 @@ function App() {
             marginBottom: theme.spacing(1),
           }}>
             {(() => {
-              const constraints = getLevelConstraints(playerLevel);
+              const levelToShow = roundActive ? practicingLevel : playerLevel;
+              const constraints = getLevelConstraints(levelToShow);
               const stringCount = 6 - constraints.minString; // Count from minString to string 5 (6th string)
               const fretCount = constraints.maxFret + 1; // Including open string for display
-              if (isRepetitionLevel(playerLevel)) {
-                const range = getRepetitionLevelRange(playerLevel);
-                return `🔄 Repetition Level - Testing knowledge from levels ${range.start}-${range.end} | ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
+              if (isRepetitionLevel(levelToShow)) {
+                const range = getRepetitionLevelRange(levelToShow);
+                return `🔄 Repetition Level ${levelToShow} - Testing knowledge from levels ${range.start}-${range.end} | ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
               }
-              return `Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
+              return `${roundActive && practicingLevel !== playerLevel ? `Practicing Level ${levelToShow} - ` : ''}Unlocked: ${stringCount} string${stringCount > 1 ? 's' : ''}, ${fretCount} fret${fretCount > 1 ? 's' : ''} (Need ${getRequiredScoreForLevel()}/${QUESTIONS_PER_ROUND} to level up)`;
             })()}
           </div>
           <Fretboard
@@ -618,7 +639,7 @@ function App() {
           }}>
             {!roundActive ? (
               <button
-                onClick={startRound}
+                onClick={() => startRound()}
                 style={{
                   padding: '12px 24px',
                   fontSize: 18,
@@ -741,6 +762,7 @@ function App() {
           <LevelMap 
             currentLevel={playerLevel} 
             maxLevel={MAX_LEVEL}
+            onLevelClick={handleLevelClick}
           />
         </div>
       )}
