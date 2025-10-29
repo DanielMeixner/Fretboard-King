@@ -318,7 +318,7 @@ function App() {
   const [roundActive, setRoundActive] = useState(false);
   const [questionsInRound, setQuestionsInRound] = useState(0);
   const [roundScore, setRoundScore] = useState(0);
-  const [practicingLevel, setPracticingLevel] = useState<number>(playerLevel);
+  const [practicingLevel, setPracticingLevel] = useState<number>(0);
 
   // Calculate dynamic timer based on score and settings
   const getCalculatedTimer = React.useCallback((): number => {
@@ -382,10 +382,11 @@ function App() {
   const handleLevelClick = React.useCallback((level: number) => {
     // Switch to play tab and start a round at the selected level
     setActiveTab('play');
-    // Small delay to allow tab switch to complete
+    // Small delay to allow tab switch to complete and UI to update
+    const TAB_SWITCH_DELAY = 100;
     setTimeout(() => {
       startRound(level);
-    }, 100);
+    }, TAB_SWITCH_DELAY);
   }, [startRound]);
 
   // On mount, check if date changed and reset scores if needed
@@ -596,7 +597,7 @@ function App() {
           <>
             <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
             {practicingLevel !== playerLevel && (
-              <span style={{ color: '#FFD700', fontSize: 14 }}>🎯 Practicing Level {practicingLevel}</span>
+              <span style={{ color: 'var(--secondary)', fontSize: 14 }}>🎯 Practicing Level {practicingLevel}</span>
             )}
           </>
         )}
