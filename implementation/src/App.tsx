@@ -40,7 +40,7 @@ const STRINGS = ['E', 'B', 'G', 'D', 'A', 'E']; // Standard tuning: index 0 = 1s
 const FRETS = 12;
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const QUESTIONS_PER_ROUND = 15;
-const MAX_LEVEL = 24; // Extended to accommodate repetition levels
+const MAX_LEVEL = 26; // Extended to accommodate more repetition levels
 
 // Note name conversion utilities
 // In German notation: B → H, A# (B-flat) → B
@@ -70,19 +70,19 @@ function convertNoteToDisplay(usNote: string, naming: NoteNaming): string {
 }
 
 // Helper function to check if a level is a repetition level
-// Repetition levels occur after every 3rd level: levels 3, 7, 11, 15, 19, 23...
+// Repetition levels occur every 3rd level: levels 2, 5, 8, 11, 14, 17, 20, 23, 26...
 function isRepetitionLevel(level: number): boolean {
-  return level > 0 && (level + 1) % 4 === 0;
+  return level > 0 && (level + 1) % 3 === 0;
 }
 
 // Helper function to get the range of levels that a repetition level covers
-// For example, level 3 covers levels 0-2, level 7 covers levels 4-6
+// For example, level 2 covers levels 0-1, level 5 covers levels 3-4
 function getRepetitionLevelRange(level: number): { start: number; end: number } {
   if (!isRepetitionLevel(level)) {
     return { start: level, end: level };
   }
   const end = level - 1;
-  const start = Math.max(0, end - 2);
+  const start = Math.max(0, end - 1);
   return { start, end };
 }
 
@@ -90,7 +90,7 @@ function getRepetitionLevelRange(level: number): { start: number; end: number } 
 // This ensures that repetition levels don't affect the actual progression
 function getProgressionLevel(level: number): number {
   // Count how many repetition levels exist before this level
-  const repetitionLevelsBefore = Math.floor(level / 4);
+  const repetitionLevelsBefore = Math.floor(level / 3);
   return level - repetitionLevelsBefore;
 }
 
@@ -99,22 +99,22 @@ function getProgressionLevel(level: number): number {
 // Display: 1st string (high E) shown at TOP (standard TAB notation)
 // Progression: Start with LOW strings (6th string/low E) and progress to HIGH strings
 // 
-// Regular levels progress through increasing difficulty:
-// Level 0: String 5 (6th string, low E), frets 0-2
-// Level 1: Strings 4-5 (5th-6th strings: A, low E), frets 0-2
-// Level 2: Strings 4-5, frets 0-3
-// Level 3: REPETITION - tests levels 0-2
-// Level 4: Strings 4-5, frets 0-4
-// Level 5: Strings 3-5, frets 0-4
-// Level 6: Strings 3-5, frets 0-5
-// Level 7: REPETITION - tests levels 4-6
-// ... and so on
+// New progression with more repetitions and gradual difficulty increase:
+// Level 0: String 5 (6th string, low E), frets 0-1 (2 notes: E, F)
+// Level 1: String 5, frets 0-2 (adds 1 note: F#)
+// Level 2: REPETITION - tests levels 0-1
+// Level 3: Strings 4-5, frets 0-2 (adds new string with 3 notes: A, A#, B)
+// Level 4: Strings 4-5, frets 0-3 (adds 1 fret: C on string 5, G on string 4)
+// Level 5: REPETITION - tests levels 3-4
+// Level 6: Strings 4-5, frets 0-4 (adds 1 fret: C# on string 5, G# on string 4)
+// Level 7: Strings 3-5, frets 0-4 (adds new string with 2 notes: D, D#)
+// Level 8: REPETITION - tests levels 6-7
+// ... and so on with repetitions every 3rd level
 function getLevelConstraints(level: number): { minString: number; maxFret: number } {
-  // Handle repetition levels - they test the previous 3 levels
+  // Handle repetition levels - they test the previous 2 levels
   if (isRepetitionLevel(level)) {
     const range = getRepetitionLevelRange(level);
     // Get constraints for all levels in the range and combine them
-    // Note: By design, the range will only include regular levels, not other repetition levels
     const constraints = [];
     for (let i = range.start; i <= range.end; i++) {
       // Skip if somehow a repetition level is in the range (should not happen by design)
@@ -131,21 +131,22 @@ function getLevelConstraints(level: number): { minString: number; maxFret: numbe
   // For regular levels, use progression level to determine constraints
   const progLevel = getProgressionLevel(level);
   
-  if (progLevel === 0) return { minString: 5, maxFret: 2 }; // 6th string (low E), first 3 frets (0-2)
-  if (progLevel === 1) return { minString: 4, maxFret: 2 }; // 5th-6th strings (A, E), first 3 frets
-  if (progLevel === 2) return { minString: 4, maxFret: 3 }; // 5th-6th strings, 4 frets
-  if (progLevel === 3) return { minString: 4, maxFret: 4 }; // 5th-6th strings, 5 frets
-  if (progLevel === 4) return { minString: 3, maxFret: 4 }; // 4th-6th strings (D, A, E), 5 frets
-  if (progLevel === 5) return { minString: 3, maxFret: 5 }; // 4th-6th strings, 6 frets
-  if (progLevel === 6) return { minString: 2, maxFret: 5 }; // 3rd-6th strings (G, D, A, E), 6 frets
-  if (progLevel === 7) return { minString: 2, maxFret: 6 }; // 3rd-6th strings, 7 frets
-  if (progLevel === 8) return { minString: 1, maxFret: 6 }; // 2nd-6th strings (B, G, D, A, E), 7 frets
-  if (progLevel === 9) return { minString: 1, maxFret: 7 }; // 2nd-6th strings, 8 frets
-  if (progLevel === 10) return { minString: 0, maxFret: 7 }; // All strings, 8 frets
-  if (progLevel === 11) return { minString: 0, maxFret: 8 }; // All strings, 9 frets
-  if (progLevel === 12) return { minString: 0, maxFret: 9 }; // All strings, 10 frets
-  if (progLevel === 13) return { minString: 0, maxFret: 10 }; // All strings, 11 frets
-  if (progLevel === 14) return { minString: 0, maxFret: 11 }; // All strings, 12 frets
+  if (progLevel === 0) return { minString: 5, maxFret: 1 }; // 6th string (low E), 2 frets (0-1)
+  if (progLevel === 1) return { minString: 5, maxFret: 2 }; // 6th string, 3 frets (0-2)
+  if (progLevel === 2) return { minString: 4, maxFret: 2 }; // 5th-6th strings, 3 frets
+  if (progLevel === 3) return { minString: 4, maxFret: 3 }; // 5th-6th strings, 4 frets
+  if (progLevel === 4) return { minString: 4, maxFret: 4 }; // 5th-6th strings, 5 frets
+  if (progLevel === 5) return { minString: 3, maxFret: 4 }; // 4th-6th strings, 5 frets
+  if (progLevel === 6) return { minString: 3, maxFret: 5 }; // 4th-6th strings, 6 frets
+  if (progLevel === 7) return { minString: 2, maxFret: 5 }; // 3rd-6th strings, 6 frets
+  if (progLevel === 8) return { minString: 2, maxFret: 6 }; // 3rd-6th strings, 7 frets
+  if (progLevel === 9) return { minString: 1, maxFret: 6 }; // 2nd-6th strings, 7 frets
+  if (progLevel === 10) return { minString: 1, maxFret: 7 }; // 2nd-6th strings, 8 frets
+  if (progLevel === 11) return { minString: 0, maxFret: 7 }; // All strings, 8 frets
+  if (progLevel === 12) return { minString: 0, maxFret: 8 }; // All strings, 9 frets
+  if (progLevel === 13) return { minString: 0, maxFret: 9 }; // All strings, 10 frets
+  if (progLevel === 14) return { minString: 0, maxFret: 10 }; // All strings, 11 frets
+  if (progLevel === 15) return { minString: 0, maxFret: 11 }; // All strings, 12 frets
   // Level MAX_LEVEL+: All strings and frets
   return { minString: 0, maxFret: FRETS - 1 };
 }
@@ -566,20 +567,20 @@ function App() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 20,
+        gap: 24,
         marginBottom: theme.spacing(1),
-        fontSize: 14,
+        fontSize: 16,
         color: 'var(--on-surface)',
       }}>
         <span>
           Level: <b style={{ color: 'var(--primary)' }}>{playerLevel}</b>
-          {isRepetitionLevel(playerLevel) && <span style={{ color: '#FFD700', fontSize: 12, marginLeft: 4 }}>🔄 Repetition</span>}
+          {isRepetitionLevel(playerLevel) && <span style={{ color: '#FFD700', fontSize: 14, marginLeft: 4 }}>🔄 Repetition</span>}
         </span>
         <span>Total Score: <b style={{ color: 'var(--secondary)' }}>{score}</b></span>
         {roundActive && (
           <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
         )}
-        <span style={{ color: '#888', fontSize: 12 }}>Yesterday: {yesterdayScore}</span>
+        <span style={{ color: '#888', fontSize: 14 }}>Yesterday: {yesterdayScore}</span>
       </div>
       {/* Play Tab Content */}
       {activeTab === 'play' && (

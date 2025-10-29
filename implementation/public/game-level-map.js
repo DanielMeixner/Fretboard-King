@@ -13,6 +13,7 @@ class GameLevelMap extends HTMLElement {
       currentLevel: 1,
       completedLevels: [],
       repetitionLevels: [],
+      sections: [], // Array of section objects: {name, levels, color}
       pathColor: '#8B4513',
       pathWidth: 8,
       markerSize: 40,
@@ -41,7 +42,8 @@ class GameLevelMap extends HTMLElement {
       'width',
       'height',
       'repetition-levels',
-      'theme'
+      'theme',
+      'sections'
     ];
   }
 
@@ -84,6 +86,9 @@ class GameLevelMap extends HTMLElement {
       case 'theme':
         this._config.theme = value || 'default';
         break;
+      case 'sections':
+        this._config.sections = this.parseSections(value);
+        break;
     }
   }
 
@@ -100,6 +105,92 @@ class GameLevelMap extends HTMLElement {
         this.updateConfig(attr, this.getAttribute(attr));
       }
     });
+  }
+
+  parseSections(value) {
+    if (!value) return [];
+    
+    try {
+      const sections = JSON.parse(value);
+      return sections.map(section => {
+        // Parse levels - support both "1-5" string format and array [1,2,3,4,5]
+        let levelArray = [];
+        if (typeof section.levels === 'string' && section.levels.includes('-')) {
+          const parts = section.levels.split('-').map(n => n.trim());
+          if (parts.length === 2) {
+            const start = parseInt(parts[0]);
+            const end = parseInt(parts[1]);
+            // Validate that both are valid numbers and start <= end
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+              for (let i = start; i <= end; i++) {
+                levelArray.push(i);
+              }
+            }
+          }
+        } else if (Array.isArray(section.levels)) {
+          levelArray = section.levels.map(l => parseInt(l)).filter(n => !isNaN(n));
+        } else if (typeof section.levels === 'number') {
+          levelArray = [section.levels];
+        }
+        
+        return {
+          name: section.name || '',
+          levels: levelArray,
+          color: section.color || '#f0f0f0'
+        };
+      });
+    } catch (e) {
+      console.error('Failed to parse sections:', e);
+      return [];
+    }
+  }
+
+  getSectionForLevel(level) {
+    return this._config.sections.find(section => section.levels.includes(level));
+  }
+
+  createSectionBackgrounds(pathPoints) {
+    const { sections, containerHeight, markerSize, spacing } = this._config;
+    if (!sections || sections.length === 0) return '';
+    
+    let sectionsHTML = '';
+    
+    sections.forEach(section => {
+      if (section.levels.length === 0) return;
+      
+      const minLevel = Math.min(...section.levels);
+      const maxLevel = Math.max(...section.levels);
+      
+      // Calculate section bounds
+      const minX = minLevel * spacing - spacing / 2;
+      const maxX = maxLevel * spacing + spacing / 2;
+      const width = maxX - minX;
+      
+      // Create section background rectangle
+      const padding = 10;
+      const sectionY = padding;
+      const sectionHeight = containerHeight - padding * 2;
+      
+      sectionsHTML += `
+        <g class="section-group">
+          <!-- Section background -->
+          <rect x="${minX}" y="${sectionY}" width="${width}" height="${sectionHeight}"
+                fill="${section.color}" opacity="0.4" rx="15" class="section-background"/>
+          <!-- Section border -->
+          <rect x="${minX}" y="${sectionY}" width="${width}" height="${sectionHeight}"
+                fill="none" stroke="${section.color}" stroke-width="3" 
+                stroke-dasharray="5,5" rx="15" class="section-border"/>
+          <!-- Section label -->
+          <text x="${minX + width / 2}" y="${padding + 20}" 
+                text-anchor="middle" class="section-label"
+                fill="#000" font-weight="bold" font-size="18px">
+            ${section.name}
+          </text>
+        </g>
+      `;
+    });
+    
+    return sectionsHTML;
   }
 
   generatePath() {
@@ -205,6 +296,7 @@ class GameLevelMap extends HTMLElement {
     const { containerWidth, containerHeight, colors, pathWidth } = this._config;
     const pathPoints = this.generatePath();
     const svgPath = this.createSVGPath(pathPoints);
+    const sectionsHTML = this.createSectionBackgrounds(pathPoints);
     
     // Calculate actual width needed
     const actualWidth = Math.max(containerWidth, (this._config.levels + 1) * this._config.spacing);
@@ -332,6 +424,9 @@ class GameLevelMap extends HTMLElement {
       <div class="level-map-container">
         <svg class="level-map-svg" width="${actualWidth}" height="${containerHeight}" 
              viewBox="0 0 ${actualWidth} ${containerHeight}">
+          <!-- Section backgrounds (rendered first, behind everything) -->
+          ${sectionsHTML}
+          
           <!-- Path -->
           <path d="${svgPath}" 
                 stroke="${colors.path}" 
@@ -383,6 +478,17 @@ class GameLevelMap extends HTMLElement {
 
   getCompletedLevels() {
     return [...this._config.completedLevels];
+  }
+
+  setSections(sections) {
+    // If sections is already an array, parse it directly, otherwise stringify first
+    const parsedSections = Array.isArray(sections) ? this.parseSections(JSON.stringify(sections)) : this.parseSections(sections);
+    this._config.sections = parsedSections;
+    this.setAttribute('sections', typeof sections === 'string' ? sections : JSON.stringify(sections));
+  }
+
+  getSections() {
+    return [...this._config.sections];
   }
 }
 
