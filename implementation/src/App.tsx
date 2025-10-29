@@ -587,7 +587,7 @@ function App() {
         <>
           <div style={{
             textAlign: 'center',
-            fontSize: 14,
+            fontSize: 12,
             color: '#888',
             marginBottom: theme.spacing(1),
           }}>
