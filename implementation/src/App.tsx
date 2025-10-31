@@ -603,8 +603,8 @@ function App() {
         {roundActive && (
           <>
             <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
-            {practicingLevel !== playerLevel && (
-              <span style={{ color: 'var(--secondary)', fontSize: 14 }}>🎯 Practicing Level {practicingLevel}</span>
+            {practicingLevel < playerLevel && (
+              <span className="replay-badge">🔁 Replay Lvl {practicingLevel}</span>
             )}
           </>
         )}
@@ -613,6 +613,17 @@ function App() {
       {/* Play Tab Content */}
       {activeTab === 'play' && (
         <>
+          {/* Repeated Level Indicator */}
+          {roundActive && practicingLevel < playerLevel && (
+            <div className="replay-banner">
+              <span style={{ fontSize: 20, marginRight: 8 }}>🔁</span>
+              Replaying Completed Level {practicingLevel}
+              <span style={{ fontSize: 20, marginLeft: 8 }}>🔁</span>
+              <div className="replay-banner-subtitle">
+                Practice mode - Points earned will count toward your total score!
+              </div>
+            </div>
+          )}
           <div style={{
             textAlign: 'center',
             fontSize: 12,
