@@ -604,15 +604,7 @@ function App() {
           <>
             <span>Round: <b style={{ color: 'var(--primary)' }}>{roundScore}/{questionsInRound}/{QUESTIONS_PER_ROUND}</b></span>
             {practicingLevel < playerLevel && (
-              <span style={{ 
-                color: '#fff',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: 13,
-                fontWeight: 600,
-                boxShadow: '0 2px 6px rgba(102, 126, 234, 0.3)',
-              }}>🔁 Replay Lvl {practicingLevel}</span>
+              <span className="replay-badge">🔁 Replay Lvl {practicingLevel}</span>
             )}
           </>
         )}
@@ -623,24 +615,11 @@ function App() {
         <>
           {/* Repeated Level Indicator */}
           {roundActive && practicingLevel < playerLevel && (
-            <div style={{
-              margin: `${theme.spacing(2)} auto ${theme.spacing(1)} auto`,
-              maxWidth: '600px',
-              padding: '12px 20px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: '#fff',
-              borderRadius: 'var(--radius)',
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-              textAlign: 'center',
-              fontSize: 16,
-              fontWeight: 600,
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              letterSpacing: '0.5px',
-            }}>
+            <div className="replay-banner">
               <span style={{ fontSize: 20, marginRight: 8 }}>🔁</span>
               Replaying Completed Level {practicingLevel}
               <span style={{ fontSize: 20, marginLeft: 8 }}>🔁</span>
-              <div style={{ fontSize: 13, marginTop: 4, opacity: 0.9, fontWeight: 400 }}>
+              <div className="replay-banner-subtitle">
                 Practice mode - Points earned will count toward your total score!
               </div>
             </div>
