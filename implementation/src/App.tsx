@@ -363,14 +363,12 @@ function App() {
     if (canLevelUp) {
       setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Level up! 🎉`);
       setPlayerLevel((level) => level + 1);
-    } else if (passed && playerLevel >= MAX_LEVEL && practicingLevel === playerLevel) {
+    } else if (passed && practicingLevel === playerLevel) {
+      // Passed current level but already at max level
       setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Maximum level reached! 🎉`);
-    } else if (passed && practicingLevel !== playerLevel) {
+    } else if (passed) {
       // Passed a replay level - award points but no level up
       setFeedback(`✅ Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Great practice! Points added! 🎯`);
-    } else if (passed) {
-      // Passed current level but already at max level
-      setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND}! 🎉`);
     } else {
       setFeedback(`Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Need ${requiredScore} to level up. Try again!`);
     }
