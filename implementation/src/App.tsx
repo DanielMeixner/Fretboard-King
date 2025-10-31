@@ -357,18 +357,27 @@ function App() {
     const requiredScore = getRequiredScoreForLevel();
     const passed = roundScore >= requiredScore;
     
-    if (passed && playerLevel < MAX_LEVEL) {
+    // Only allow leveling up when practicing the current level (not when replaying earlier levels)
+    const canLevelUp = passed && practicingLevel === playerLevel && playerLevel < MAX_LEVEL;
+    
+    if (canLevelUp) {
       setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Level up! 🎉`);
       setPlayerLevel((level) => level + 1);
-    } else if (passed) {
+    } else if (passed && playerLevel >= MAX_LEVEL && practicingLevel === playerLevel) {
       setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Maximum level reached! 🎉`);
+    } else if (passed && practicingLevel !== playerLevel) {
+      // Passed a replay level - award points but no level up
+      setFeedback(`✅ Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Great practice! Points added! 🎯`);
+    } else if (passed) {
+      // Passed current level but already at max level
+      setFeedback(`🎉 Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND}! 🎉`);
     } else {
       setFeedback(`Round completed! You scored ${roundScore}/${QUESTIONS_PER_ROUND} - Need ${requiredScore} to level up. Try again!`);
     }
     
-    // Add round score to total score
+    // Add round score to total score (always, even when replaying)
     setScore((s) => s + roundScore);
-  }, [roundScore, QUESTIONS_PER_ROUND, playerLevel]);
+  }, [roundScore, QUESTIONS_PER_ROUND, playerLevel, practicingLevel]);
 
   const stopRound = React.useCallback(() => {
     setRoundActive(false);
